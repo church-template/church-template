@@ -1,0 +1,19 @@
+# IDE Settings
+/.idea
+
+# Claude AI Settings
+/.claude/settings.local.json
+
+# macOS
+.DS_Store
+
+# 로컬 전용 작업 기록 — 설계·계획 문서, 구현 보고서, 작업 트리
+docs/superpowers/
+.superpowers/
+.report/
+.issues/
+.pr/
+.worktrees/
+
+# projectops: 업데이트 시 템플릿 사본(비교용)
+.github/.projectops/incoming/

@@ -1,0 +1,57 @@
+HELP.md
+.gradle
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/
+
+# ====================================================================
+# SUH-DEVOPS-TEMPLATE: Auto-added entries
+# ====================================================================
+/.claude/settings.local.json
+
+# 로컬 이슈 초안 (GitHub 업로드용, 버전관리 제외)
+/.issues/
+
+# 환경변수 파일 (비밀값 커밋 방지)
+.env
+
+# 구현 보고서 (로컬 전용)
+/.report/
+# 로컬 개발 전용 compose 오버라이드(DB 포트 노출 등) — 운영에 올라가면 안 됨
+docker-compose.override.yml
+.DS_Store
+
+# 설계·계획 문서 (로컬 전용)
+docs/superpowers/

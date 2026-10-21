@@ -1,0 +1,151 @@
+package com.elipair.church.domain.sermon;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import com.elipair.church.domain.member.AuthorDisplayService;
+import com.elipair.church.domain.sermon.dto.SermonCreateRequest;
+import com.elipair.church.domain.sermon.dto.SermonPatchRequest;
+import com.elipair.church.domain.sermon.dto.SermonUpdateRequest;
+import com.elipair.church.domain.tag.ContentResourceType;
+import com.elipair.church.domain.tag.ContentTagService;
+import com.elipair.church.global.exception.BusinessException;
+import com.elipair.church.global.exception.ErrorCode;
+import com.elipair.church.global.viewcount.ViewCountStore;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+class SermonServiceTest {
+
+    private SermonRepository repository;
+    private ContentTagService contentTagService;
+    private AuthorDisplayService authorDisplayService;
+    private ViewCountStore viewCountStore;
+    private SermonService service;
+
+    @BeforeEach
+    void init() {
+        repository = mock(SermonRepository.class);
+        contentTagService = mock(ContentTagService.class);
+        authorDisplayService = mock(AuthorDisplayService.class);
+        viewCountStore = mock(ViewCountStore.class);
+        service = new SermonService(repository, contentTagService, authorDisplayService, viewCountStore);
+        when(contentTagService.getTags(any(), any())).thenReturn(List.of());
+        when(authorDisplayService.displayName(any())).thenReturn("관리자");
+    }
+
+    private SermonCreateRequest createReq() {
+        return new SermonCreateRequest(
+                "제목", "김목사", "시리즈", "마 5", "본문", null, null, LocalDate.of(2026, 1, 1), List.of(1L, 2L));
+    }
+
+    private Sermon mockSermonWithVersion(long version) {
+        Sermon s = mock(Sermon.class);
+        when(s.getId()).thenReturn(10L);
+        when(s.getVersion()).thenReturn(version);
+        return s;
+    }
+
+    @Test
+    void create_persists_and_links_tags() {
+        Sermon saved = mockSermonWithVersion(0L);
+        when(repository.save(any(Sermon.class))).thenReturn(saved);
+
+        service.create(createReq());
+
+        verify(repository).save(any(Sermon.class));
+        verify(contentTagService).replaceLinks(ContentResourceType.SERMON, 10L, List.of(1L, 2L));
+    }
+
+    @Test
+    void update_with_matching_version_replaces_tags() {
+        Sermon s = mockSermonWithVersion(3L);
+        when(repository.findByIdAndDeletedAtIsNull(10L)).thenReturn(Optional.of(s));
+        SermonUpdateRequest req = new SermonUpdateRequest(
+                "새제목", "이목사", null, null, "새본문", null, null, LocalDate.of(2026, 2, 2), List.of(5L), 3L);
+
+        service.update(10L, req);
+
+        verify(contentTagService).replaceLinks(ContentResourceType.SERMON, 10L, List.of(5L));
+        verify(repository).flush();
+    }
+
+    @Test
+    void update_with_stale_version_throws_409_and_skips_changes() {
+        Sermon s = mockSermonWithVersion(3L);
+        when(repository.findByIdAndDeletedAtIsNull(10L)).thenReturn(Optional.of(s));
+        SermonUpdateRequest req = new SermonUpdateRequest(
+                "새제목", "이목사", null, null, "새본문", null, null, LocalDate.of(2026, 2, 2), List.of(5L), 2L);
+
+        assertThatThrownBy(() -> service.update(10L, req))
+                .isInstanceOfSatisfying(BusinessException.class, e -> assertThat(e.getErrorCode())
+                        .isEqualTo(ErrorCode.OPTIMISTIC_LOCK_CONFLICT));
+        verify(contentTagService, never()).replaceLinks(any(), any(), any());
+        verify(repository, never()).flush();
+    }
+
+    @Test
+    void patch_with_null_tagIds_keeps_tags() {
+        Sermon s = mockSermonWithVersion(0L);
+        when(repository.findByIdAndDeletedAtIsNull(10L)).thenReturn(Optional.of(s));
+        SermonPatchRequest req = new SermonPatchRequest("부분제목", null, null, null, null, null, null, null, null, 0L);
+
+        service.patch(10L, req);
+
+        verify(contentTagService, never()).replaceLinks(any(), any(), any());
+        verify(repository).flush();
+    }
+
+    @Test
+    void patch_with_stale_version_throws_409_and_skips_changes() {
+        Sermon s = mockSermonWithVersion(3L);
+        when(repository.findByIdAndDeletedAtIsNull(10L)).thenReturn(Optional.of(s));
+        SermonPatchRequest req = new SermonPatchRequest("부분제목", null, null, null, null, null, null, null, null, 2L);
+
+        assertThatThrownBy(() -> service.patch(10L, req))
+                .isInstanceOfSatisfying(BusinessException.class, e -> assertThat(e.getErrorCode())
+                        .isEqualTo(ErrorCode.OPTIMISTIC_LOCK_CONFLICT));
+        verify(contentTagService, never()).replaceLinks(any(), any(), any());
+        verify(repository, never()).flush();
+    }
+
+    @Test
+    void delete_soft_deletes_and_cleans_tags() {
+        Sermon s = mockSermonWithVersion(0L);
+        when(repository.findByIdAndDeletedAtIsNull(10L)).thenReturn(Optional.of(s));
+
+        service.delete(10L);
+
+        verify(s).softDelete();
+        verify(contentTagService).cleanUp(ContentResourceType.SERMON, 10L);
+    }
+
+    @Test
+    void get_unknown_throws_404_without_counting() {
+        when(repository.findByIdAndDeletedAtIsNull(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.get(99L))
+                .isInstanceOfSatisfying(BusinessException.class, e -> assertThat(e.getErrorCode())
+                        .isEqualTo(ErrorCode.RESOURCE_NOT_FOUND));
+        verify(viewCountStore, never()).increment(any(), anyLong());
+    }
+
+    @Test
+    void get_buffers_view_and_returns_live_count() {
+        Sermon s = mockSermonWithVersion(0L);
+        when(s.getViewCount()).thenReturn(5L);
+        when(repository.findByIdAndDeletedAtIsNull(10L)).thenReturn(Optional.of(s));
+        when(viewCountStore.increment("sermon", 10L)).thenReturn(3L);
+
+        assertThat(service.get(10L).viewCount()).isEqualTo(8L); // DB 5 + 버퍼 3
+    }
+}

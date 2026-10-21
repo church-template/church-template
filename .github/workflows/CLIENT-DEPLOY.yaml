@@ -1,0 +1,80 @@
+# client/ → Vercel 프로덕션 배포. main에 client/** 변경이 들어오면 실행된다(릴리스 PR 머지 = 배포).
+# 🔑 필수 Secrets: VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID
+# Vercel 프로젝트의 Root Directory는 비워 둔다 — CLI를 client/에서 실행하므로 client/가 곧 루트다.
+# 템플릿 레포 자체에서는 실행하지 않는다(배포 대상 없음). 템플릿으로 만든 교회 레포는 이름이 달라 그대로 동작한다.
+name: CLIENT-DEPLOY
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+on:
+  push:
+    branches: [main]
+    paths: ["client/**"]
+  workflow_dispatch:
+
+concurrency:
+  group: client-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-production:
+    if: github.repository != 'church-template/church-template'
+    runs-on: ubuntu-latest
+    environment: production
+    defaults:
+      run:
+        working-directory: client
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      # 22.x 고정: jsdom 의존(html-encoding-sniffer→@exodus/bytes ESM)이 require(ESM)을 써서
+      # Node 22.12+ 필요 — 런타임(engines)과 빌드 환경을 일치시킨다.
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: client/pnpm-lock.yaml
+
+      - name: ☁️ Install Vercel CLI
+        run: pnpm add -g vercel@latest
+
+      # Vercel이 원격 대신 CI에서 빌드하도록 prebuilt 플로우 사용(로컬 pnpm build 중복 제거)
+      - name: ⬇️ Pull Vercel env
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: 🔨 Build
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: 🚀 Deploy to Vercel Production
+        id: deploy
+        run: |
+          URL=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
+          echo "deployment_url=${URL}" >> "$GITHUB_OUTPUT"
+
+      - name: 📋 Deployment Summary
+        if: always()
+        run: |
+          {
+            echo "## 🚀 client 배포 결과"
+            echo ""
+            if [ "${{ job.status }}" == "success" ]; then
+              echo "✅ **배포 성공**"
+              echo "- 🌐 **URL**: ${{ steps.deploy.outputs.deployment_url }}"
+            else
+              echo "❌ **빌드 또는 배포 실패**"
+              echo "- 커밋: \`${{ github.sha }}\`"
+              echo "- Actions 탭에서 'Build' 스텝 로그를 확인하세요."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

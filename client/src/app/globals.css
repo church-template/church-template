@@ -1,0 +1,383 @@
+@import "tailwindcss";
+
+/* ============================================================
+ * 디자인 토큰 (DESIGN.md 단일 진실)
+ * 값은 여기 한 번만 정의 → Tailwind 유틸 자동 생성(bg-primary, text-ink, p-section ...)
+ * hex·px 인라인 금지, 항상 토큰 유틸 사용.
+ * ============================================================ */
+@theme {
+  /* --- 색 --- */
+  --color-primary: #0052ff;
+  --color-primary-active: #003ecc;
+  --color-primary-disabled: #a8b8cc;
+  --color-primary-soft: #e8efff;
+
+  --color-ink: #0a0b0d;
+  --color-body: #5b616e;
+  --color-muted: #7c828a;
+  --color-muted-soft: #a8acb3;
+
+  --color-hairline: #dee1e6;
+  --color-hairline-soft: #eef0f3;
+
+  --color-canvas: #ffffff;
+  --color-surface-soft: #f7f7f7;
+  --color-surface-card: #ffffff;
+  --color-surface-strong: #eef0f3;
+  --color-surface-dark: #0a0b0d;
+  --color-surface-dark-elevated: #16181c;
+  --color-cover-dark: #0a0f1f;        /* 가이드 14A — 메인 십자가 덮개색 */
+
+  --color-on-primary: #ffffff;
+  --color-on-dark: #ffffff;
+  --color-on-dark-soft: #a8acb3;
+  --color-primary-on-dark: #4d82ff;  /* 다크 밴드 위 액센트 — #0052ff는 다크 위 대비 부족(challenge-today-band 전용) */
+
+  --color-success: #05b169;           /* 폼 메시지 텍스트 색으로만 */
+  --color-error: #cf202f;
+  --color-error-active: #a81b27;      /* 파괴적 확인 버튼 hover·press */
+  --color-on-error: #ffffff;          /* error 채움 위 텍스트 */
+
+  /* --- 로고 신학 상징색 (content.ts symbolism — 브랜드 팔레트 아님).
+   *     단일 액센트 원칙 유지: 큰 색면·버튼 금지, 작은 점·가는 룰·인라인 단어 강조에만. --- */
+  --color-symbol-blue: #0a3fd0;
+  --color-symbol-green: #157a47;
+  --color-symbol-red: #a81e2c;
+  --color-symbol-orange: #b8590a;
+
+  /* --- 외부 지도 서비스 브랜드색 (카카오·네이버 "…에서 보기" 버튼 전용).
+   *     단일 액센트 원칙의 의도적 예외 — 제3자 공식 버튼색이라 교회 브랜드 팔레트 아님.
+   *     button-kakao/naver 외엔 쓰지 않는다(큰 색면·다른 CTA 금지). --- */
+  --color-kakao: #fee500;
+  --color-kakao-ink: #000000;         /* 카카오 노랑 위 라벨(공식 검정) */
+  --color-naver: #03c75a;
+  --color-naver-on: #ffffff;          /* 네이버 초록 위 라벨(흰색) */
+
+  /* --- 라운드 --- */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;                   /* 카드 표준 */
+  --radius-pill: 100px;
+  --radius-full: 9999px;
+
+  /* --- 그림자 (DESIGN Elevation의 유일한 단계) --- */
+  --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.04);
+
+  /* --- 레이어(z-index) — portal이 고정 네비(z-nav) 위에 뜨도록(T04) --- */
+  --z-nav: 10;
+  --z-popover: 40;
+  --z-overlay: 50;
+  --z-toast: 60;
+
+  /* --- 모달 폭 (max-w t-shirt 토큰 충돌 회피: 항상 var()로 참조) --- */
+  --container-modal: 32rem;
+  --container-lightbox: 64rem;
+  --container-narrow: 42rem;        /* 계정·폼 중심 페이지(마이페이지) 읽기 컬럼 폭 */
+
+  /* --- 동작 컴포넌트 애니메이션 (자체 키프레임, tw-animate-css 미사용, T04) --- */
+  --animate-overlay-in: overlay-in 0.2s ease;
+  --animate-overlay-out: overlay-out 0.15s ease;
+  --animate-content-in: content-in 0.2s ease;
+  --animate-content-out: content-out 0.15s ease;
+  --animate-popover-in: popover-in 0.18s ease;
+  --animate-popover-out: popover-out 0.12s ease;
+  --animate-slide-in-right: slide-in-right 0.25s ease;
+  --animate-slide-out-right: slide-out-right 0.2s ease;
+  --animate-slide-in-left: slide-in-left 0.25s ease;
+  --animate-slide-out-left: slide-out-left 0.2s ease;
+
+  /* --- 간격(의미 토큰) — p-section, gap-lg 등 --- */
+  --spacing-xxs: 4px;
+  --spacing-xs: 8px;
+  --spacing-sm: 12px;
+  --spacing-base: 16px;
+  --spacing-md: 20px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-xxl: 48px;
+  --spacing-section: 96px;
+
+  /* --- 레이아웃 --- */
+  --container-max: 1200px;
+  --container-padding: 24px;
+  --spacing-nav: 96px;             /* 타이포 확대에 맞춘 헤더 높이(고령 가독 강조) */
+
+  /* --- 타이포 (size + line-height + weight + letter-spacing) ---
+   * 디스플레이는 clamp로 유동(모바일→데스크톱 자동 스케일), 본문은 고정.
+   * 어르신 가독성 기준으로 본문 20px·보조 18px(최대 확대, DESIGN.md 표와 동기). */
+  --text-display-mega: clamp(36px, 6vw, 72px);
+  --text-display-mega--line-height: 1.15;
+  --text-display-mega--font-weight: 500;
+  --text-display-mega--letter-spacing: -0.02em;
+
+  --text-display-xl: clamp(32px, 5vw, 56px);
+  --text-display-xl--line-height: 1.18;
+  --text-display-xl--font-weight: 500;
+  --text-display-xl--letter-spacing: -0.02em;
+
+  --text-display-lg: clamp(28px, 4.5vw, 44px);
+  --text-display-lg--line-height: 1.2;
+  --text-display-lg--font-weight: 500;
+  --text-display-lg--letter-spacing: -0.02em;
+
+  --text-display-md: clamp(26px, 4vw, 36px);
+  --text-display-md--line-height: 1.25;
+  --text-display-md--font-weight: 500;
+  --text-display-md--letter-spacing: -0.01em;
+
+  --text-display-sm: clamp(24px, 3.5vw, 30px);
+  --text-display-sm--line-height: 1.3;
+  --text-display-sm--font-weight: 500;
+  --text-display-sm--letter-spacing: -0.01em;
+
+  --text-title-lg: 30px;
+  --text-title-lg--line-height: 1.35;
+  --text-title-lg--font-weight: 600;
+  --text-title-lg--letter-spacing: -0.01em;
+
+  --text-title-md: 22px;
+  --text-title-md--line-height: 1.4;
+  --text-title-md--font-weight: 600;
+
+  --text-title-sm: 20px;
+  --text-title-sm--line-height: 1.4;
+  --text-title-sm--font-weight: 600;
+
+  --text-body-md: 20px;
+  --text-body-md--line-height: 1.7;
+  --text-body-md--font-weight: 400;
+
+  --text-body-lg: 24px;               /* 읽는 본문 강조(소망·이야기) — 고령 가독 lead */
+  --text-body-lg--line-height: 1.7;
+  --text-body-lg--font-weight: 400;
+
+  --text-body-xl: 32px;               /* 지금 읽는 문장(목회자 인사말 reading-spotlight의 켜진 문장) — bodyLg에서 부풀어 오른다 */
+  --text-body-xl--line-height: 1.5;
+  --text-body-xl--font-weight: 600;
+
+  --text-body-lg-strong: 28px;        /* 읽는 본문 내 의미 구절 강조(소망 4색) — body-lg보다 키우고 행간 낮춰 줄높이 유지 */
+  --text-body-lg-strong--line-height: 1.45;
+  --text-body-lg-strong--font-weight: 700;
+
+  --text-body-strong: 20px;
+  --text-body-strong--line-height: 1.7;
+  --text-body-strong--font-weight: 700;
+
+  --text-body-sm: 18px;
+  --text-body-sm--line-height: 1.6;
+  --text-body-sm--font-weight: 400;
+
+  --text-datetime: 18px;              /* tnum은 typo.datetime이 tabular-nums로 부여 */
+  --text-datetime--line-height: 1.4;
+  --text-datetime--font-weight: 500;
+
+  --text-datetime-lg: 22px;           /* 강조 날짜·시간(예배 카드 대표시간) — tnum은 typo.datetimeLg가 부여 */
+  --text-datetime-lg--line-height: 1.4;
+  --text-datetime-lg--font-weight: 600;
+
+  --text-caption: 16px;
+  --text-caption--line-height: 1.5;
+  --text-caption--font-weight: 400;
+
+  --text-caption-strong: 15px;
+  --text-caption-strong--line-height: 1.5;
+  --text-caption-strong--font-weight: 600;
+  --text-caption-strong--letter-spacing: 0.02em;
+
+  --text-button: 20px;
+  --text-button--line-height: 1.15;
+  --text-button--font-weight: 600;
+
+  --text-nav-link: 24px;
+  --text-nav-link--line-height: 1.4;
+  --text-nav-link--font-weight: 500;
+}
+
+/* 모바일 헤더 높이 축소 — h-nav와 히어로 오프셋(HeroReveal이 --spacing-nav를 런타임 참조)이
+ * 이 한 곳으로 일관되게 줄어든다. 로고 40 + 여백 기준 64px. */
+@media (max-width: 767px) {
+  :root {
+    --spacing-nav: 64px;
+  }
+}
+
+/* 폰트는 next/font가 런타임에 주입하는 --font-pretendard를 참조하므로 inline 매핑 */
+@theme inline {
+  --font-sans: var(--font-pretendard), -apple-system, system-ui,
+    "Apple SD Gothic Neo", sans-serif;
+}
+
+/* ============================================================
+ * 베이스 — 흰 캔버스 고정(v1 다크모드 제외, DESIGN.md Known Gaps)
+ * ============================================================ */
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+/* 버튼 커서 — Tailwind v4 preflight가 button/[role=button]의 cursor:pointer 리셋을
+ * 제거(브라우저 기본 default 따름)해 호버 시 손가락 커서가 안 나온다. v3 동작을 base
+ * 레이어에서 복원(유틸로 개별 오버라이드 가능). 비활성은 제외 — Button이
+ * disabled:cursor-not-allowed로 별도 처리하고, 여기 :not(:disabled)로 손대지 않는다. */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+/* ============================================================
+ * 동작 컴포넌트(T04) — z-index 유틸(토큰 참조) · 자체 키프레임
+ * ============================================================ */
+@utility z-nav { z-index: var(--z-nav); }
+@utility z-popover { z-index: var(--z-popover); }
+@utility z-overlay { z-index: var(--z-overlay); }
+@utility z-toast { z-index: var(--z-toast); }
+
+@keyframes overlay-in { from { opacity: 0 } to { opacity: 1 } }
+@keyframes overlay-out { from { opacity: 1 } to { opacity: 0 } }
+
+/* Tailwind v4는 -translate-x-1/2 -translate-y-1/2를 `translate` 속성으로 컴파일한다(transform 아님).
+ * 키프레임은 scale만 건드린다 — 여기서 translate를 또 주면 translate 속성과 합산돼(-100%) 모달이
+ * 트리거 근처에서 열렸다가 가운데로 튀는 버그가 난다. 중앙정렬은 translate 속성이 항상 담당. */
+@keyframes content-in {
+  from { opacity: 0; transform: scale(0.96) }
+  to   { opacity: 1; transform: scale(1) }
+}
+@keyframes content-out {
+  from { opacity: 1; transform: scale(1) }
+  to   { opacity: 0; transform: scale(0.96) }
+}
+
+/* Popover/Select/Dropdown은 Radix popper가 위치 transform을 관리 → scale만 건드린다 */
+@keyframes popover-in { from { opacity: 0; transform: scale(0.96) } to { opacity: 1; transform: scale(1) } }
+@keyframes popover-out { from { opacity: 1; transform: scale(1) } to { opacity: 0; transform: scale(0.96) } }
+
+@keyframes slide-in-right { from { transform: translateX(100%) } to { transform: translateX(0) } }
+@keyframes slide-out-right { from { transform: translateX(0) } to { transform: translateX(100%) } }
+@keyframes slide-in-left { from { transform: translateX(-100%) } to { transform: translateX(0) } }
+@keyframes slide-out-left { from { transform: translateX(0) } to { transform: translateX(-100%) } }
+
+/* 접근성 — 모션 최소화 선호 시 애니메이션 제거 */
+@media (prefers-reduced-motion: reduce) {
+  [data-state] { animation: none !important; }
+}
+
+/* ============================================================
+ * AuthSplitLayout(auth-split) — 진입 1회 클립 연출(B안).
+ * 사진이 풀스크린 → 좌측 절반으로 갈라지고 폼 카드가 페이드인.
+ * clip-path/opacity만 사용(reflow 없음, DESIGN 연출 규칙). 기본값 = 최종 정적 상태라
+ * reduced-motion·모바일(.auth-hero-media는 모바일에서 display:none)·no-JS는 50:50을 즉시 본다.
+ * 레이아웃 레벨이라 로그인↔재동의 내부 이동에선 재생되지 않고 새 접속 시 1회만 재생된다.
+ * ============================================================ */
+@keyframes auth-split {
+  from { clip-path: inset(0 0 0 0); }
+  to   { clip-path: inset(0 50% 0 0); }
+}
+@keyframes auth-form-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+/* 정적 최종 상태: 사진은 좌측 절반만(우측 절반은 root 배경/폼이 차지) */
+.auth-hero-media { clip-path: inset(0 50% 0 0); }
+/* 데스크톱 + 모션 허용일 때만 1회 재생. 폼 카드는 갈라짐이 끝날 무렵 겹쳐 페이드인. */
+@media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+  .auth-hero-media { animation: auth-split 0.7s cubic-bezier(0.4, 0, 0.2, 1) both; }
+  .auth-hero-form  { animation: auth-form-in 0.5s ease 0.45s both; }
+}
+
+/* ============================================================
+ * MarkdownContent(T06) — 본문 prose. DESIGN.md body-md(행간 1.7) 기준 커스텀.
+ * @tailwindcss/typography(스택 밖) 미사용 — 토큰만 참조.
+ * ============================================================ */
+.prose-church {
+  /* 상세 본문(설교·공지·일정·앨범·부서 description)은 장문 '읽는 본문' — 고령 가독 위해 body-lg(24px) lead. */
+  font-size: var(--text-body-lg);
+  line-height: var(--text-body-lg--line-height);
+  color: var(--color-body);
+}
+.prose-church > * + * {
+  margin-top: var(--spacing-base);
+}
+.prose-church h1,
+.prose-church h2,
+.prose-church h3 {
+  color: var(--color-ink);
+  font-weight: 500;
+  margin-top: var(--spacing-xl);
+  line-height: 1.3;
+}
+.prose-church h1 { font-size: var(--text-display-md); }
+.prose-church h2 { font-size: var(--text-title-lg); }
+.prose-church h3 { font-size: var(--text-title-md); }
+.prose-church a {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+.prose-church a:hover { color: var(--color-primary-active); }
+.prose-church ul,
+.prose-church ol {
+  padding-left: var(--spacing-lg);
+}
+.prose-church ul { list-style: disc; }
+.prose-church ol { list-style: decimal; }
+.prose-church li + li { margin-top: var(--spacing-xs); }
+.prose-church blockquote {
+  border-left: 3px solid var(--color-hairline);
+  padding-left: var(--spacing-base);
+  color: var(--color-muted);
+}
+.prose-church img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-lg);
+}
+.prose-church table {
+  /* 본문 표(마크다운 GFM) — 스타일 부재 시 테두리 없는 맨 텍스트로 보인다(#106 실사용 리포트).
+   * 최대 8열까지 넓어질 수 있어 pre와 같은 가로 스크롤 보호(내용 좁으면 내용 폭, 넓으면 100% 캡). */
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-size: var(--text-body-md);
+  line-height: var(--text-body-md--line-height);
+}
+.prose-church th,
+.prose-church td {
+  border: 1px solid var(--color-hairline);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  text-align: left;
+}
+.prose-church th {
+  background: var(--color-surface-soft);
+  color: var(--color-ink);
+  font-weight: 600;
+}
+.prose-church code {
+  font-size: 0.9em;
+  background: var(--color-surface-strong);
+  padding: 0 var(--spacing-xxs);
+  border-radius: var(--radius-xs);
+}
+.prose-church pre {
+  background: var(--color-surface-soft);
+  padding: var(--spacing-base);
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+}
+.prose-church pre code { background: transparent; padding: 0; }
+
+/* 연혁 스토리(history) 하단 스크림 — 다크 미디어 위 on-dark 텍스트 대비 확보.
+ * 토큰 변수만 참조(rgba/hex 인라인 금지). 일반 장식이라 CrossHero/DeptHero의 검증용 rgba 예외 대상 아님. */
+@utility scrim-bottom {
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--color-cover-dark) 72%, transparent),
+    color-mix(in srgb, var(--color-cover-dark) 24%, transparent) 38%,
+    transparent 64%
+  );
+}

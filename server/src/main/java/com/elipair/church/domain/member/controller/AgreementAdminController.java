@@ -1,0 +1,42 @@
+package com.elipair.church.domain.member.controller;
+
+import com.elipair.church.domain.member.MemberService;
+import com.elipair.church.domain.member.dto.AgreementResetRequest;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
+
+/** 약관 재동의 사이클 — 관리자 일괄 리셋(스펙 §5.2 방식 A). */
+@Tag(name = "약관(관리)", description = "약관 재동의 사이클 관리 API(스펙 §5.2). MEMBER_MANAGE 필요.")
+@RestController
+@RequestMapping("/api/admin/agreements")
+public class AgreementAdminController {
+
+    private final MemberService memberService;
+
+    public AgreementAdminController(MemberService memberService) {
+        this.memberService = memberService;
+    }
+
+    @Operation(summary = "동의 일괄 리셋", description = """
+                    지정한 약관 항목의 동의 플래그를 전체 회원 대상으로 일괄 초기화(200, 본문 없음). 약관 개정 시 재동의 사이클 트리거용.
+
+                    - 인증(JWT): 필요 — `MEMBER_MANAGE`
+                    - 요청 본문: `AgreementResetRequest` — `target`("terms" 또는 "privacy")
+                    - 반환값: 없음(200)
+                    - 부수효과: 해당 플래그 false로 일괄 초기화 → 영향 회원 로그인 시 requiresAgreement=true로 재동의 유도 · 알 수 없는 target은 400 INVALID_INPUT_VALUE
+                    """)
+    @PostMapping("/reset")
+    @PreAuthorize("hasAuthority('MEMBER_MANAGE')")
+    @ResponseStatus(HttpStatus.OK)
+    public void reset(@Valid @RequestBody AgreementResetRequest request) {
+        memberService.resetAgreements(request.target());
+    }
+}

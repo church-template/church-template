@@ -1,0 +1,18 @@
+# 프로덕션 오버레이 — 서버에서 base와 함께 사용한다:
+#   IMAGE_NAME=ghcr.io/<owner>/<repo> IMAGE_TAG=<버전> docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# backend의 로컬 build 대신 GHCR에서 pull한 이미지를 쓴다.
+# IMAGE_NAME은 배포 워크플로우가 export(ghcr.io/<owner>/<repo>) — 레포를 복사한 교회에서도 코드 수정 0.
+# 기본값을 두지 않는다: 수동 up에서 빠뜨리면 다른 레포 이미지를 조용히 받는 대신 즉시 실패한다.
+# base의 build 키는 병합 시 남지만, pull된 이미지가 존재하는 한 up이 빌드를 시도하지 않는다
+# (서버에는 소스가 없으므로 pull 실패 시 빌드도 실패 = 배포 실패가 조용히 숨지 않는다).
+services:
+  backend:
+    image: ${IMAGE_NAME:?IMAGE_NAME is required (ghcr.io/<owner>/<repo>)}:${IMAGE_TAG:-latest}
+
+  # 호스트 DB 도구(DBeaver 등)가 SSH 터널로 postgres에 붙기 위한 포트 노출.
+  # 127.0.0.1 바인딩이라 퍼블릭 인터페이스에는 뜨지 않는다(외부 접근 불가 — 호스트 로컬/SSH 터널 전용).
+  # docker published 포트는 호스트 iptables(ufw)를 우회하므로 반드시 127.0.0.1: 접두사를 유지할 것.
+  # "5432:5432"로 쓰면 0.0.0.0에 열려 인터넷 노출(OCI 시큐리티리스트에만 의존) — 금지.
+  postgres:
+    ports:
+      - "127.0.0.1:5432:5432"
