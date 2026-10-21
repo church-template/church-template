@@ -33,7 +33,7 @@
 | [`client/`](client) | Next.js 16 + TypeScript 프론트엔드 (pnpm, Node 22) | [client/README.md](client/README.md) |
 | [`server/`](server) | Spring Boot 4 + PostgreSQL 백엔드 (Gradle, Java 21, Docker Compose) | [server/README.md](server/README.md) |
 | `.github/` | projectops 자동화(버전·릴리스·이슈) + `CLIENT-DEPLOY`·`SERVER-CI`·`SERVER-DEPLOY` | [Git Flow](#git-flow) |
-| `.claude/` | AI 에이전트용 명령어·규칙 (`DESIGN.md`는 client, 나머지 규칙은 server에 적용) | [CLAUDE.md](CLAUDE.md) |
+| `.claude/` | AI 에이전트용 규칙 (`DESIGN.md`는 client, 나머지 규칙은 server에 적용) | [CLAUDE.md](CLAUDE.md) |
 | `docs/diagrams/` | 이 README의 다이어그램(SVG)과 원본(archify JSON) | [다이어그램 고치기](#다이어그램-고치기) |
 
 이 템플릿의 콘텐츠는 가상의 **예시교회** 값이고, 사진·영상은 회색 placeholder입니다.
