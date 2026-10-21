@@ -1,0 +1,290 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "릴리스와 배포 흐름",
+    "locale": "ko",
+    "output": ".archify/release-flow.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/church-template/church-template.git",
+      "provider": "github",
+      "link_mode": "web",
+      "revision": "4d38ad50e386acc8eda3353959ce7d477d221a78"
+    },
+    "legend": {
+      "entries": {
+        "frontend": {
+          "label": "사람이 하는 단계"
+        },
+        "backend": {
+          "label": "GitHub Actions 자동화"
+        },
+        "security": {
+          "label": "검사·게이트"
+        },
+        "cloud": {
+          "label": "배포 대상"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "dev",
+      "label": "개발"
+    },
+    {
+      "id": "ci",
+      "label": "검증"
+    },
+    {
+      "id": "release",
+      "label": "릴리스 · projectops"
+    },
+    {
+      "id": "client_lane",
+      "label": "client 배포"
+    },
+    {
+      "id": "server_lane",
+      "label": "server 배포"
+    }
+  ],
+  "phases": [
+    {
+      "id": "build_up",
+      "label": "develop에 쌓기",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "ship",
+      "label": "릴리스",
+      "fromCol": 2,
+      "toCol": 3,
+      "variant": "emphasis"
+    },
+    {
+      "id": "deploy",
+      "label": "바뀐 쪽 배포",
+      "fromCol": 4,
+      "toCol": 5,
+      "variant": "dashed"
+    }
+  ],
+  "mainPath": [
+    "work",
+    "develop_pr",
+    "release_pr",
+    "changelog",
+    "image_push",
+    "ssh_up"
+  ],
+  "nodes": [
+    {
+      "id": "work",
+      "lane": "dev",
+      "col": 0,
+      "type": "frontend",
+      "label": "작업 브랜치",
+      "sublabel": "feat: 설명 #이슈",
+      "sources": [
+        {
+          "path": ".claude/rules/versioning-ci.md",
+          "line": 5,
+          "end_line": 7
+        }
+      ]
+    },
+    {
+      "id": "develop_pr",
+      "lane": "dev",
+      "col": 1,
+      "type": "frontend",
+      "label": "develop PR",
+      "sublabel": "리뷰 후 머지",
+      "sources": [
+        {
+          "path": ".claude/rules/versioning-ci.md",
+          "line": 7
+        }
+      ]
+    },
+    {
+      "id": "server_ci",
+      "lane": "ci",
+      "col": 1,
+      "type": "security",
+      "label": "SERVER-CI",
+      "sublabel": "gradle build + test",
+      "tag": "server/** 변경 시",
+      "sources": [
+        {
+          "path": ".github/workflows/SERVER-CI.yaml",
+          "line": 1,
+          "end_line": 12
+        }
+      ]
+    },
+    {
+      "id": "release_pr",
+      "lane": "release",
+      "col": 2,
+      "type": "frontend",
+      "label": "릴리스 PR",
+      "sublabel": "develop → main",
+      "sources": [
+        {
+          "path": ".claude/rules/versioning-ci.md",
+          "line": 8
+        }
+      ]
+    },
+    {
+      "id": "changelog",
+      "lane": "release",
+      "col": 3,
+      "type": "backend",
+      "label": "RELEASE-CHANGELOG",
+      "sublabel": "버전·노트·자동 머지",
+      "tag": "main + 버전 태그",
+      "sources": [
+        {
+          "path": ".github/workflows/PROJECT-COMMON-RELEASE-CHANGELOG.yaml",
+          "line": 6,
+          "end_line": 23
+        }
+      ]
+    },
+    {
+      "id": "client_deploy",
+      "lane": "client_lane",
+      "col": 4,
+      "type": "backend",
+      "label": "CLIENT-DEPLOY",
+      "sublabel": "vercel build",
+      "sources": [
+        {
+          "path": ".github/workflows/CLIENT-DEPLOY.yaml",
+          "line": 11,
+          "end_line": 26
+        }
+      ]
+    },
+    {
+      "id": "vercel",
+      "lane": "client_lane",
+      "col": 5,
+      "type": "cloud",
+      "label": "Vercel 프로덕션",
+      "sublabel": "deploy --prebuilt",
+      "sources": [
+        {
+          "path": ".github/workflows/CLIENT-DEPLOY.yaml",
+          "line": 55,
+          "end_line": 62
+        }
+      ]
+    },
+    {
+      "id": "image_push",
+      "lane": "server_lane",
+      "col": 4,
+      "type": "cloud",
+      "label": "GHCR 이미지",
+      "sublabel": "버전 태그 push",
+      "sources": [
+        {
+          "path": ".github/workflows/SERVER-DEPLOY.yaml",
+          "line": 29,
+          "end_line": 66
+        }
+      ]
+    },
+    {
+      "id": "ssh_up",
+      "lane": "server_lane",
+      "col": 5,
+      "type": "backend",
+      "label": "SSH 배포",
+      "sublabel": "compose pull · up",
+      "sources": [
+        {
+          "path": ".github/workflows/SERVER-DEPLOY.yaml",
+          "line": 114,
+          "end_line": 140
+        },
+        {
+          "path": ".github/workflows/SERVER-DEPLOY.yaml",
+          "line": 142
+        }
+      ],
+      "tag": "헬스 게이트 180초"
+    }
+  ],
+  "edges": [
+    {
+      "from": "work",
+      "to": "develop_pr"
+    },
+    {
+      "from": "develop_pr",
+      "to": "server_ci",
+      "label": "PR 검사",
+      "role": "branch",
+      "route": "drop",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "from": "develop_pr",
+      "to": "release_pr",
+      "label": "릴리스할 때",
+      "variant": "emphasis"
+    },
+    {
+      "from": "release_pr",
+      "to": "changelog"
+    },
+    {
+      "from": "changelog",
+      "to": "image_push",
+      "label": "server/**",
+      "variant": "emphasis"
+    },
+    {
+      "from": "changelog",
+      "to": "client_deploy",
+      "label": "client/**",
+      "role": "branch"
+    },
+    {
+      "from": "client_deploy",
+      "to": "vercel"
+    },
+    {
+      "from": "image_push",
+      "to": "ssh_up",
+      "variant": "security"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "버전 하나",
+      "items": [
+        "루트 version.yml이 client·server 버전을 함께 올린다",
+        "커밋 제목이 feat:이면 minor, feat!:이면 major, 그 외 patch"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "알아 둘 것",
+      "items": [
+        "릴리스 머지가 배포를 깨우려면 _GITHUB_PAT_TOKEN이 있어야 한다(GITHUB_TOKEN 머지는 후속 워크플로를 트리거하지 않음)",
+        "템플릿 레포 자체에서는 두 배포 모두 건너뛴다"
+      ]
+    }
+  ]
+}

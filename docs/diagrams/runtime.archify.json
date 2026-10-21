@@ -1,0 +1,289 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "교회 홈페이지 런타임 구조",
+    "locale": "ko",
+    "output": ".archify/runtime.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/church-template/church-template.git",
+      "provider": "github",
+      "link_mode": "web",
+      "revision": "4d38ad50e386acc8eda3353959ce7d477d221a78"
+    }
+  },
+  "components": [
+    {
+      "id": "visitor",
+      "type": "external",
+      "label": "방문자 · 교인",
+      "sublabel": "브라우저",
+      "pos": [
+        40,
+        200
+      ],
+      "size": [
+        140,
+        64
+      ],
+      "sources": [
+        {
+          "path": "client/src/lib/auth/authFetch.ts",
+          "line": 1,
+          "end_line": 12,
+          "label": "브라우저에서 API 호출"
+        }
+      ]
+    },
+    {
+      "id": "client",
+      "type": "frontend",
+      "label": "client · Next.js",
+      "sublabel": "서버 컴포넌트 + ISR",
+      "pos": [
+        310,
+        72
+      ],
+      "size": [
+        190,
+        64
+      ],
+      "sources": [
+        {
+          "path": "client/src/lib/api/bulletins.ts",
+          "line": 7,
+          "end_line": 11,
+          "label": "공개 목록 fetch + revalidate 60"
+        },
+        {
+          "path": ".github/workflows/CLIENT-DEPLOY.yaml",
+          "line": 55,
+          "end_line": 62,
+          "label": "Vercel 배포"
+        }
+      ]
+    },
+    {
+      "id": "caddy",
+      "type": "security",
+      "label": "Caddy",
+      "sublabel": "HTTPS 리버스 프록시",
+      "pos": [
+        310,
+        320
+      ],
+      "size": [
+        190,
+        64
+      ],
+      "sources": [
+        {
+          "path": "server/docs/deploy-server-setup.md",
+          "line": 86,
+          "end_line": 94,
+          "label": "Let's Encrypt · 80/443"
+        }
+      ]
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "server · Spring Boot",
+      "sublabel": "REST API :8080",
+      "pos": [
+        620,
+        320
+      ],
+      "size": [
+        200,
+        64
+      ],
+      "sources": [
+        {
+          "path": "server/docker-compose.yml",
+          "line": 27,
+          "end_line": 30,
+          "label": "backend 서비스"
+        },
+        {
+          "path": "server/src/main/resources/application.yml",
+          "line": 49,
+          "end_line": 51,
+          "label": "파일 저장 경로"
+        }
+      ]
+    },
+    {
+      "id": "postgres",
+      "type": "database",
+      "label": "PostgreSQL 16",
+      "sublabel": "회원·콘텐츠",
+      "pos": [
+        940,
+        196
+      ],
+      "size": [
+        180,
+        62
+      ],
+      "sources": [
+        {
+          "path": "server/docker-compose.yml",
+          "line": 1,
+          "end_line": 3
+        }
+      ]
+    },
+    {
+      "id": "redis",
+      "type": "database",
+      "label": "Redis 7",
+      "sublabel": "토큰·메인 캐시",
+      "pos": [
+        940,
+        321
+      ],
+      "size": [
+        180,
+        62
+      ],
+      "sources": [
+        {
+          "path": "server/docker-compose.yml",
+          "line": 16,
+          "end_line": 18
+        },
+        {
+          "path": "server/src/main/java/com/elipair/church/global/security/redis/RefreshTokenStore.java",
+          "line": 12,
+          "end_line": 15,
+          "label": "refresh 토큰 저장"
+        },
+        {
+          "path": "server/src/main/java/com/elipair/church/domain/main/MainService.java",
+          "line": 13,
+          "end_line": 32,
+          "label": "/api/main 캐시"
+        }
+      ]
+    },
+    {
+      "id": "uploads",
+      "type": "database",
+      "label": "미디어 파일",
+      "sublabel": "uploads 볼륨",
+      "pos": [
+        940,
+        446
+      ],
+      "size": [
+        180,
+        62
+      ],
+      "sources": [
+        {
+          "path": "server/docker-compose.yml",
+          "line": 57,
+          "end_line": 58
+        },
+        {
+          "path": "server/src/main/java/com/elipair/church/global/storage/LocalFileStorage.java",
+          "line": 24,
+          "end_line": 26,
+          "label": "로컬 디스크 저장"
+        }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Vercel",
+      "wraps": [
+        "client"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "운영 서버",
+      "wraps": [
+        "caddy",
+        "api",
+        "postgres",
+        "redis",
+        "uploads"
+      ],
+      "pad": 22
+    },
+    {
+      "kind": "security-group",
+      "label": "Docker Compose",
+      "wraps": [
+        "api",
+        "postgres",
+        "redis",
+        "uploads"
+      ],
+      "pad": 12
+    }
+  ],
+  "connections": [
+    {
+      "from": "visitor",
+      "to": "client",
+      "label": "HTTPS 페이지",
+      "variant": "emphasis"
+    },
+    {
+      "from": "visitor",
+      "to": "caddy",
+      "label": "authFetch · JWT",
+      "variant": "security"
+    },
+    {
+      "from": "client",
+      "to": "caddy",
+      "label": "fetch · ISR 60초"
+    },
+    {
+      "from": "caddy",
+      "to": "api",
+      "label": "리버스 프록시",
+      "variant": "emphasis"
+    },
+    {
+      "from": "api",
+      "to": "postgres",
+      "label": "JPA · SQL"
+    },
+    {
+      "from": "api",
+      "to": "redis",
+      "label": "토큰·캐시"
+    },
+    {
+      "from": "api",
+      "to": "uploads",
+      "label": "파일 저장"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "두 가지 호출 경로",
+      "items": [
+        "공개 페이지: Vercel 서버 컴포넌트가 fetch + ISR로 API를 읽는다",
+        "회원·관리자 화면: 브라우저가 authFetch로 JWT를 붙여 직접 호출한다"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "교회마다 따로",
+      "items": [
+        "교회마다 별도 서버·DB를 띄운다(멀티테넌시 없음)",
+        "교회별 값은 client 상수와 server .env로 주입"
+      ]
+    }
+  ]
+}

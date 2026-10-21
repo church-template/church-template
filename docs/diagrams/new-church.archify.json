@@ -1,0 +1,229 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "템플릿으로 새 교회 사이트 만들기",
+    "locale": "ko",
+    "output": ".archify/new-church.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/church-template/church-template.git",
+      "provider": "github",
+      "link_mode": "web",
+      "revision": "4d38ad50e386acc8eda3353959ce7d477d221a78"
+    },
+    "legend": {
+      "entries": {
+        "external": {
+          "label": "템플릿"
+        },
+        "frontend": {
+          "label": "client 작업"
+        },
+        "backend": {
+          "label": "server 작업"
+        },
+        "security": {
+          "label": "배포 설정"
+        },
+        "cloud": {
+          "label": "오픈"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "github",
+      "label": "GitHub"
+    },
+    {
+      "id": "client_lane",
+      "label": "client 채우기"
+    },
+    {
+      "id": "server_lane",
+      "label": "server 준비"
+    },
+    {
+      "id": "launch",
+      "label": "오픈"
+    }
+  ],
+  "phases": [
+    {
+      "id": "copy",
+      "label": "복사",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "fill",
+      "label": "교회 정보 채우기",
+      "fromCol": 2,
+      "toCol": 3,
+      "variant": "emphasis"
+    },
+    {
+      "id": "open",
+      "label": "배포",
+      "fromCol": 4,
+      "toCol": 5,
+      "variant": "dashed"
+    }
+  ],
+  "mainPath": [
+    "template",
+    "church_repo",
+    "constants",
+    "photos",
+    "server_env",
+    "secrets",
+    "release"
+  ],
+  "nodes": [
+    {
+      "id": "template",
+      "lane": "github",
+      "col": 0,
+      "type": "external",
+      "label": "church-template",
+      "sublabel": "Use this template",
+      "sources": [
+        {
+          "path": "README.md",
+          "line": 36,
+          "end_line": 38
+        }
+      ]
+    },
+    {
+      "id": "church_repo",
+      "lane": "github",
+      "col": 1,
+      "type": "frontend",
+      "label": "<교회>-church",
+      "sublabel": "새 레포",
+      "sources": [
+        {
+          "path": "README.md",
+          "line": 38
+        }
+      ]
+    },
+    {
+      "id": "constants",
+      "lane": "client_lane",
+      "col": 2,
+      "type": "frontend",
+      "label": "교회 정보",
+      "sublabel": "constants/*.ts",
+      "tag": "이름·주소·예배 시간",
+      "sources": [
+        {
+          "path": "README.md",
+          "line": 39,
+          "end_line": 46
+        }
+      ]
+    },
+    {
+      "id": "photos",
+      "lane": "client_lane",
+      "col": 3,
+      "type": "frontend",
+      "label": "사진·색",
+      "sublabel": "public/ · primary 토큰",
+      "sources": [
+        {
+          "path": "README.md",
+          "line": 48,
+          "end_line": 58
+        }
+      ]
+    },
+    {
+      "id": "server_env",
+      "lane": "server_lane",
+      "col": 3,
+      "type": "backend",
+      "label": "서버 · .env",
+      "sublabel": "DB·도메인·시크릿",
+      "sources": [
+        {
+          "path": "README.md",
+          "line": 59
+        }
+      ]
+    },
+    {
+      "id": "secrets",
+      "lane": "launch",
+      "col": 4,
+      "type": "security",
+      "label": "Secrets 등록",
+      "sublabel": "Vercel · SSH 키",
+      "sources": [
+        {
+          "path": "README.md",
+          "line": 60,
+          "end_line": 71
+        }
+      ]
+    },
+    {
+      "id": "release",
+      "lane": "launch",
+      "col": 5,
+      "type": "cloud",
+      "label": "첫 릴리스",
+      "sublabel": "develop → main",
+      "tag": "사이트 오픈",
+      "sources": [
+        {
+          "path": "README.md",
+          "line": 75
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "template",
+      "to": "church_repo",
+      "label": "복사",
+      "variant": "emphasis"
+    },
+    {
+      "from": "church_repo",
+      "to": "constants"
+    },
+    {
+      "from": "constants",
+      "to": "photos"
+    },
+    {
+      "from": "photos",
+      "to": "server_env"
+    },
+    {
+      "from": "server_env",
+      "to": "secrets"
+    },
+    {
+      "from": "secrets",
+      "to": "release",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "코드는 그대로",
+      "items": [
+        "교회마다 바뀌는 건 client 상수·사진과 server .env뿐",
+        "디자인은 primary 토큰 4개로 교회 색을 바꾼다"
+      ]
+    }
+  ]
+}

@@ -17,3 +17,6 @@ docs/superpowers/
 
 # projectops: 업데이트 시 템플릿 사본(비교용)
 .github/.projectops/incoming/
+
+# archify 작업·검증 산출물(최종 다이어그램은 docs/diagrams/)
+.archify/
