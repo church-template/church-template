@@ -61,12 +61,13 @@ permissions:
   actions: write
 
 jobs:
+  # 포크에서 온 PR은 실행하지 않는다 — pull_request_target은 포크 PR에도 쓰기 토큰·시크릿을 주므로 자동 머지→배포로 이어질 수 있다.
   # Job 1: CodeRabbit Summary 감지 및 파싱
   detect-and-parse:
     name: CodeRabbit Summary 감지 및 파싱
     # head 가드: main이 default라 feature PR의 base가 main으로 잘못 열릴 수 있다.
     # develop발 릴리스 PR만 automerge 파이프라인을 탄다. (후속 job은 needs 조건으로 연쇄 스킵)
-    if: github.event.pull_request.head.ref == 'develop'
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'develop'
     runs-on: ubuntu-latest
     outputs:
       summary_found: ${{ steps.detect_summary.outputs.summary_found }}
@@ -246,7 +247,7 @@ jobs:
     name: 릴리스 노트 생성 (provider 사다리)
     runs-on: ubuntu-latest
     needs: detect-and-parse
-    if: needs.detect-and-parse.outputs.summary_found == 'false'
+    if: github.event.pull_request.head.repo.full_name == github.repository && needs.detect-and-parse.outputs.summary_found == 'false'
     # job 단위 permissions는 workflow 단위를 대체한다 — Copilot CLI 인증에 필요
     permissions:
       contents: read
@@ -336,6 +337,7 @@ jobs:
     needs: [detect-and-parse, fallback-summary]
     if: |
       always() &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
       (needs.detect-and-parse.outputs.summary_found == 'true' ||
        needs.fallback-summary.outputs.summary_found == 'true')
     steps:
