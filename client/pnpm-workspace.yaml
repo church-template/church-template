@@ -1,3 +1,9 @@
 ignoredBuiltDependencies:
   - sharp
   - unrs-resolver
+
+# 서버 새니타이즈(isomorphic-dompurify)가 쓰는 jsdom을 26으로 고정 — jsdom 29의 하위 의존성
+# (html-encoding-sniffer@6 → @exodus/bytes)이 ESM 전용이라 Vercel 런타임이 require()로 불러오지 못해
+# 공지 상세가 500이 난다(eunsaem-frontend#154). 26은 CJS 의존성만 쓴다. 테스트용 jsdom(devDependencies)은 29 그대로.
+overrides:
+  isomorphic-dompurify>jsdom: ^26.1.0
