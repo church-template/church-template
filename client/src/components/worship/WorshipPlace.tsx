@@ -7,14 +7,14 @@ import { cn } from "@/lib/utils";
 import { CHURCH_ADDRESS, CHURCH_PHONE } from "@/constants/church";
 import { WORSHIP } from "@/constants/content";
 
-// 다크 밴드 — 좌: 장소 안내(주소·문의·오시는 길 링크) / 우: 참석 안내. 지도는 /about/location 위임.
+// 다크 밴드 — 장소 안내(주소·문의·오시는 길 링크). 지도는 /about/location 위임.
+// 참석 안내는 주일 아침 흐름(SundayFlow)으로 옮겼다 — 같은 내용을 한 페이지에 두 번 두지 않는다.
 export function WorshipPlace() {
   return (
     <section className="break-keep bg-surface-dark py-section">
       <Container>
         <Reveal>
-          <div className="grid gap-xl lg:grid-cols-2 lg:items-start">
-            {/* 좌 — 장소 안내 */}
+          <div>
             <div>
               <h2 className={cn(typo.titleLg, "text-on-dark")}>{WORSHIP.placeHeading}</h2>
               <p className={cn(typo.bodyLg, "mt-base text-on-dark-soft")}>{WORSHIP.placeLead}</p>
@@ -41,18 +41,6 @@ export function WorshipPlace() {
               >
                 오시는 길 자세히
               </Link>
-            </div>
-            {/* 우 — 참석 안내 */}
-            <div>
-              <h3 className={cn(typo.titleMd, "text-on-dark")}>{WORSHIP.attendHeading}</h3>
-              <p className={cn(typo.bodyMd, "mt-base text-on-dark-soft")}>{WORSHIP.attendLead}</p>
-              <div className={cn(typo.bodyMd, "mt-base text-on-dark")}>
-                {WORSHIP.attendNotes.map((note) => (
-                  <p key={note} className="mt-sm first:mt-0">
-                    {note}
-                  </p>
-                ))}
-              </div>
             </div>
           </div>
         </Reveal>

@@ -1,40 +1,30 @@
 import Link from "next/link";
 import { Container } from "@/components/shell/Container";
 import { Reveal } from "@/components/main/Reveal";
-import { Card } from "@/components/ui/Card";
 import { buttonVariants } from "@/components/ui/Button";
 import { typo } from "@/constants/typography";
 import { cn } from "@/lib/utils";
 import { WORSHIP, WORSHIP_SERVICES } from "@/constants/content";
 
-// 흰 캔버스 — 정기 예배 2×2 카드(이름·대표시간·찬양시간·설명 3줄). 페이지 h1을 겸한다.
+// 주중 예배 표(worship-weekday-rows) — 주일 예배는 히어로·주일 흐름이 맡으므로 주일에 드리지 않는 예배만 정리한다.
+// 주일 흐름과 같은 흰 섹션으로 이어지게 위 여백을 두지 않는다.
 export function WorshipRegular() {
+  const services = WORSHIP_SERVICES.filter((s) => !s.schedule.days.includes(0));
   return (
-    <Container as="section" className="break-keep py-section">
+    <Container as="section" className="break-keep pb-section">
       <Reveal>
-        <h1 className={cn(typo.displayMd, "text-ink")}>{WORSHIP.title}</h1>
-        <p className={cn(typo.bodyLg, "mt-base text-body")}>{WORSHIP.regularLead}</p>
+        <h2 className={cn(typo.displayMd, "text-ink")}>{WORSHIP.weekdayHeading}</h2>
       </Reveal>
-      <ul className="mt-xxl grid gap-base sm:grid-cols-2">
-        {WORSHIP_SERVICES.map((s, i) => (
-          <li key={s.name}>
-            <Reveal delay={i * 120} className="h-full">
-              <Card surface="soft" className="h-full p-xl">
-                <h3 className={cn(typo.titleMd, "text-ink")}>{s.name}</h3>
-                {/* 대표시간이 카드의 핵심 정보 — 예배명에 묻히지 않게 강조 위계 + primary.
-                    이 페이지의 시간은 곧 행동 정보라 단일 액센트 예외를 확정(사용자 결정, #109). */}
-                <p className={cn(typo.datetimeLg, "mt-xs text-primary")}>{s.time}</p>
-                {s.praise ? (
-                  <p className={cn(typo.datetime, "mt-xxs text-muted")}>{s.praise}</p>
-                ) : null}
-                <div className={cn(typo.bodyMd, "mt-base text-body")}>
-                  {s.notes.map((note) => (
-                    <p key={note} className="mt-xs first:mt-0">
-                      {note}
-                    </p>
-                  ))}
-                </div>
-              </Card>
+      <ul className="mt-xl border-t-2 border-ink">
+        {services.map((s, i) => (
+          <li key={s.name} className="border-b border-hairline py-lg">
+            <Reveal delay={i * 120} className="grid gap-xs md:grid-cols-4 md:items-baseline md:gap-lg">
+              <h3 className={cn(typo.titleMd, "text-ink")}>{s.name}</h3>
+              {/* 시간은 곧 행동 정보 — 예배명에 묻히지 않게 강조 위계 + primary(단일 액센트 예외, #109). */}
+              <p className={cn(typo.datetimeLg, "text-primary")}>{s.time}</p>
+              <p className={cn(typo.bodyMd, "text-body md:col-span-2")}>
+                {[s.praise, s.notes[0]].filter(Boolean).join(" · ")}
+              </p>
             </Reveal>
           </li>
         ))}

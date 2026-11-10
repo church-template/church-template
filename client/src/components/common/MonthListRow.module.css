@@ -1,0 +1,13 @@
+/* month-list-row — 넓은 폭은 날짜 | 제목·부제 | 오른쪽 정보 3칸, 좁은 폭은 세로로 쌓는다. */
+.row {
+  display: grid;
+  gap: var(--spacing-xxs);
+  padding: var(--spacing-md) var(--spacing-xxs);
+}
+@media (min-width: 40rem) {
+  .row {
+    grid-template-columns: 7.5rem 1fr auto;
+    gap: var(--spacing-lg);
+    align-items: baseline;
+  }
+}

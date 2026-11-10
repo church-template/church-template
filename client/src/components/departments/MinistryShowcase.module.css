@@ -1,0 +1,69 @@
+/* ministry-showcase — 데스크톱에서만 사진 무대를 고정한다. 높이·구간 수치는 연출 수치.
+   좁은 폭은 고정하지 않고 부서마다 사진+글을 세로로 쌓는다(2컬럼이면 사진이 반쪽이 된다). */
+.stage { display: none; }
+.step { padding: var(--spacing-xl) 0; }
+.step + .step { border-top: 1px solid var(--color-hairline); }
+.photo {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  border-radius: var(--radius-xl);
+  margin-bottom: var(--spacing-lg);
+}
+
+@media (min-width: 64rem) {
+  .root {
+    display: grid;
+    grid-template-columns: 7fr 5fr;
+    gap: var(--spacing-xxl);
+    align-items: start;
+  }
+  .stage {
+    display: block;
+    position: sticky;
+    /* 단체 사진(16:9 안팎)의 좌우 사람이 잘리지 않게 3:2 — 정사각에 가까우면 양끝이 크게 잘린다.
+       28rem은 최대 폭에서의 무대 높이 근사값: 켜지는 부서(뷰포트 가운데 띠)와 사진의 세로 중심을 맞춘다. */
+    top: max(var(--spacing-lg), calc(50vh - 14rem));
+    aspect-ratio: 3 / 2;
+    overflow: hidden;
+    border-radius: var(--radius-xl);
+    background: var(--color-surface-dark);
+  }
+  .stage img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+  }
+  .stage img[data-active="true"] { opacity: 1; }
+  .count {
+    position: absolute;
+    z-index: 1;
+    left: var(--spacing-lg);
+    top: var(--spacing-md);
+    padding: var(--spacing-xxs) var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    color: var(--color-on-dark);
+    background: color-mix(in srgb, var(--color-surface-dark) 55%, transparent);
+  }
+  .photo { display: none; } /* 사진은 고정 무대가 보여 준다 */
+  .step {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 62vh;
+    padding: var(--spacing-lg) 0;
+    opacity: 0.55; /* 지우지 않고 흐리게만 — 고령 가독 */
+    transition: opacity 0.4s ease;
+  }
+  .step + .step { border-top: 0; }
+  .step[data-active="true"] { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage img, .step { transition: none; }
+}

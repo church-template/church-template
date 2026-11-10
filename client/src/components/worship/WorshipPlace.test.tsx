@@ -15,7 +15,7 @@ vi.mock("next/link", () => ({
 import { WorshipPlace } from "./WorshipPlace";
 
 describe("WorshipPlace", () => {
-  it("장소·문의·참석 안내와 오시는 길 링크를 렌더한다", () => {
+  it("장소·문의와 오시는 길 링크를 렌더한다", () => {
     vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: true })));
     render(<WorshipPlace />);
 
@@ -29,8 +29,5 @@ describe("WorshipPlace", () => {
 
     const more = screen.getByRole("link", { name: "오시는 길 자세히" });
     expect(more.getAttribute("href")).toBe("/about/location");
-
-    expect(screen.getByText(WORSHIP.attendHeading)).toBeDefined();
-    expect(screen.getByText(WORSHIP.attendNotes[0])).toBeDefined();
   });
 });

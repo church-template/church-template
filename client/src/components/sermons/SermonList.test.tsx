@@ -52,11 +52,31 @@ describe("SermonList", () => {
     expect(screen.getByText("조건에 맞는 설교가 없습니다.")).toBeDefined();
   });
 
-  it("설교가 있으면 카드 그리드를 보인다", () => {
+  it("필터 없는 첫 페이지면 최신 설교를 띠로, 나머지를 월별 목록으로 보인다", () => {
+    const older = { ...card, id: 2, title: "지난 설교", preachedAt: "2026-06-28" };
+    useSermonsMock.mockReturnValue(state({ data: { content: [card, older], page } }));
+    render(<SermonList />);
+    const links = screen.getAllByRole("link");
+    expect(links.map((a) => a.getAttribute("href"))).toEqual(["/sermons/1", "/sermons/2"]);
+    expect(links[0].textContent).toContain("말씀 보기");
+    expect(screen.getByRole("heading", { level: 2, name: "2026년 6월" })).toBeDefined();
+    expect(screen.queryByRole("heading", { level: 2, name: "2026년 7월" })).toBeNull(); // 최신 설교는 띠에만
+  });
+
+  it("검색·필터가 걸리면 띠 없이 월별 목록만 보인다", () => {
+    searchParamsRef.current = new URLSearchParams("q=믿음");
     useSermonsMock.mockReturnValue(state({ data: { content: [card], page } }));
     render(<SermonList />);
-    expect(screen.getByText("주일설교")).toBeDefined();
+    expect(screen.queryByText("말씀 보기")).toBeNull();
+    expect(screen.getByRole("heading", { level: 2, name: "2026년 7월" })).toBeDefined();
     expect(screen.getByRole("link").getAttribute("href")).toBe("/sermons/1");
+  });
+
+  it("두 번째 페이지부터는 띠를 보이지 않는다", () => {
+    searchParamsRef.current = new URLSearchParams("page=1");
+    useSermonsMock.mockReturnValue(state({ data: { content: [card], page: { ...page, number: 1, totalPages: 2 } } }));
+    render(<SermonList />);
+    expect(screen.queryByText("말씀 보기")).toBeNull();
   });
 
   it("여러 페이지면 페이지네이션을 보인다", () => {
