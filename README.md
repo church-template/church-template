@@ -95,6 +95,7 @@ pnpm dev                              # http://localhost:3000
 </picture>
 
 1. GitHub에서 **Use this template** → 새 레포 이름은 `<교회>-church` (예: `example-church`).
+   **Include all branches는 끈다** — 켜면 브랜치마다 따로 된 최초 커밋이 생겨 `develop` → `main` 릴리스 PR을 만들 수 없다("no history in common"). 만든 뒤 `main`에서 `develop`을 따서 푸시한다: `git switch -c develop && git push -u origin develop`.
 2. 교회 정보 — 프론트 상수 파일:
 
    | 파일 | 바꿀 것 |
