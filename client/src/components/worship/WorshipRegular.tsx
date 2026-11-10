@@ -6,10 +6,10 @@ import { typo } from "@/constants/typography";
 import { cn } from "@/lib/utils";
 import { WORSHIP, WORSHIP_SERVICES } from "@/constants/content";
 
-// 주중 예배 표(worship-weekday-rows) — 대표 예배(주일)는 히어로·주일 흐름이 맡으므로 나머지만 행으로 정리한다.
+// 주중 예배 표(worship-weekday-rows) — 주일 예배는 히어로·주일 흐름이 맡으므로 주일에 드리지 않는 예배만 정리한다.
 // 주일 흐름과 같은 흰 섹션으로 이어지게 위 여백을 두지 않는다.
 export function WorshipRegular() {
-  const services = WORSHIP_SERVICES.filter((s) => !s.primary);
+  const services = WORSHIP_SERVICES.filter((s) => !s.schedule.days.includes(0));
   return (
     <Container as="section" className="break-keep pb-section">
       <Reveal>

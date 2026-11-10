@@ -11,13 +11,14 @@ vi.mock("next/link", () => ({
 }));
 
 describe("WorshipRegular (주중 예배 표)", () => {
-  it("대표 예배(주일)를 뺀 예배를 이름·시간·찬양 시간과 함께 행으로 렌더한다", () => {
+  it("주일에 드리지 않는 예배만 이름·시간과 함께 행으로 렌더한다", () => {
     // Reveal이 useEffect에서 matchMedia 호출 — jsdom 미구현이라 reduced 경로로 스텁(about/* 관례).
     vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: true })));
     render(<WorshipRegular />);
 
     expect(screen.getByRole("heading", { level: 2, name: WORSHIP.weekdayHeading })).toBeDefined();
-    const weekday = WORSHIP_SERVICES.filter((s) => !s.primary);
+    const weekday = WORSHIP_SERVICES.filter((s) => !s.schedule.days.includes(0));
+    expect(weekday.length).toBeGreaterThan(0);
     expect(screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual(
       weekday.map((s) => s.name),
     );
