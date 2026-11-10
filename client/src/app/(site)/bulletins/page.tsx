@@ -3,17 +3,20 @@ import type { Metadata } from "next";
 import { Container } from "@/components/shell/Container";
 import { typo } from "@/constants/typography";
 import { cn } from "@/lib/utils";
-import { formatDate } from "@/lib/date";
+import { formatMonthDay, groupByMonth } from "@/lib/monthGroups";
 import { apiUrl } from "@/lib/auth/apiBase";
 import { getBulletins } from "@/lib/api/bulletins";
-import { BulletinRow } from "@/components/cards/BulletinRow";
+import { BulletinFeature } from "@/components/bulletins/BulletinFeature";
 import { BulletinListAction, BulletinRowActions } from "@/components/bulletins/BulletinAdminActions";
+import { MonthSection } from "@/components/common/MonthSection";
+import { MonthListRow } from "@/components/common/MonthListRow";
 import { Pagination } from "@/components/common/Pagination";
 import { EmptyState } from "@/components/common/EmptyState";
 import { CHURCH_NAME } from "@/constants/church";
+import { NEWS_LIST } from "@/constants/news";
 
 export const metadata: Metadata = {
-  title: "주보",
+  title: NEWS_LIST.bulletinTitle,
   description: `${CHURCH_NAME} 주보를 확인하고 내려받을 수 있습니다.`,
   alternates: { canonical: "/bulletins" },
 };
@@ -29,36 +32,61 @@ function toNum(v: string | string[] | undefined): number | undefined {
   return Number.isFinite(n) ? n : undefined;
 }
 
-// 공개 주보 목록. searchParams 접근 → 동적 렌더. 서버 정렬(serviceDate,desc) 신뢰.
-// 행 클릭 = /api/media/{mediaId} 새 탭 PDF(스펙 D1 — 상세 페이지 없음).
+// 공개 주보 목록 — 첫 페이지의 최신 주보는 띠로 크게(bulletin-feature), 나머지는 월별 목록.
+// searchParams 접근 → 동적 렌더. 서버 정렬(serviceDate,desc) 신뢰. 행 클릭 = /api/media/{mediaId} 새 탭 PDF(상세 페이지 없음).
 export default async function BulletinsPage({
   searchParams,
 }: {
   searchParams: Promise<SearchParams>;
 }) {
   const sp = await searchParams;
-  const data = await getBulletins({ page: toNum(sp.page) });
+  const page = toNum(sp.page);
+  const data = await getBulletins({ page });
+  const featured = !page ? data.content[0] : undefined;
+  const rest = featured ? data.content.slice(1) : data.content;
+  const pdf = (mediaId: number) => apiUrl(`/api/media/${mediaId}`);
 
   return (
     <Container as="section" className="py-section">
       <div className="flex items-center justify-between gap-base">
-        <h1 className={cn(typo.displayMd, "text-ink")}>주보</h1>
+        <h1 className={cn(typo.displayMd, "text-ink")}>{NEWS_LIST.bulletinTitle}</h1>
         <BulletinListAction />
       </div>
 
       {data.content.length === 0 ? (
-        <EmptyState message="등록된 주보가 없습니다." className="mt-xl" />
+        <EmptyState message={NEWS_LIST.bulletinEmpty} className="mt-xl" />
       ) : (
-        <div className="mt-xl">
-          {data.content.map((b) => (
-            <BulletinRow
-              key={b.id}
-              title={b.title}
-              date={formatDate(b.serviceDate)}
-              author={b.author}
-              pdfUrl={apiUrl(`/api/media/${b.mediaId}`)}
-              actions={<BulletinRowActions b={b} />}
-            />
+        <div className="mt-xl flex flex-col gap-xl">
+          {featured ? (
+            <div>
+              <BulletinFeature
+                title={featured.title}
+                serviceDate={featured.serviceDate}
+                author={featured.author}
+                pdfUrl={pdf(featured.mediaId)}
+                now={new Date()}
+              />
+              {/* 어드민 수정·삭제 — 띠 밖 형제로(중첩 인터랙티브 금지). 비어드민은 아무것도 렌더하지 않는다. */}
+              <div className="mt-xs flex justify-end">
+                <BulletinRowActions b={featured} />
+              </div>
+            </div>
+          ) : null}
+          {groupByMonth(rest, (b) => b.serviceDate).map((g) => (
+            <MonthSection key={g.key} id={g.key} label={g.label}>
+              {g.items.map((b) => (
+                <MonthListRow
+                  key={b.id}
+                  href={pdf(b.mediaId)}
+                  external
+                  srHint={NEWS_LIST.pdfHint}
+                  date={formatMonthDay(b.serviceDate)}
+                  title={b.title}
+                  meta={b.author}
+                  actions={<BulletinRowActions b={b} />}
+                />
+              ))}
+            </MonthSection>
           ))}
         </div>
       )}

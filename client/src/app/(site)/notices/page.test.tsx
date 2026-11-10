@@ -55,22 +55,21 @@ describe("NoticesPage (목록)", () => {
     expect(screen.getByText("조건에 맞는 공지가 없습니다.")).toBeDefined();
   });
 
-  it("행을 서버 순서대로 렌더(고정 우선 재정렬 안 함)·상세 링크·고정 배지, totalPages>1이면 Pagination", async () => {
+  it("고정 공지는 맨 위 '고정 공지'로, 나머지는 월별로 묶고 상세 링크·월일 날짜, totalPages>1이면 Pagination", async () => {
     getNotices.mockResolvedValueOnce({
       content: [
-        { id: 5, title: "고정 공지", isPinned: true, viewCount: 10, createdAt: "2026-06-01T09:00:00", tags: [], author: null },
-        { id: 4, title: "일반 공지", isPinned: false, viewCount: 3, createdAt: "2026-05-28T09:00:00", tags: [], author: null },
+        { id: 5, title: "고정 공지글", isPinned: true, viewCount: 10, createdAt: "2026-06-01T09:00:00", tags: [], author: null },
+        { id: 4, title: "일반 공지", isPinned: false, viewCount: 3, createdAt: "2026-05-28T09:00:00", tags: [], author: "김집사" },
       ],
       page: { size: 10, number: 0, totalElements: 20, totalPages: 2 },
     });
     render(await NoticesPage({ searchParams: Promise.resolve({}) }));
     // 서버가 준 순서 그대로 — 고정 공지(id 5)가 먼저
     const links = screen.getAllByRole("link");
-    expect(links[0].getAttribute("href")).toBe("/notices/5");
-    expect(links[1].getAttribute("href")).toBe("/notices/4");
-    // 고정 배지·날짜 포맷·페이지네이션
-    expect(screen.getByText("고정")).toBeDefined();
-    expect(screen.getByText(/2026\. 6\. 1\./)).toBeDefined();
+    expect(links.map((a) => a.getAttribute("href"))).toEqual(["/notices/5", "/notices/4"]);
+    expect(screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent)).toEqual(["고정 공지", "2026년 5월"]);
+    expect(screen.getByText("5월 28일")).toBeDefined();
+    expect(screen.getByText("김집사")).toBeDefined();
     expect(screen.getByTestId("pagination").getAttribute("data-total")).toBe("2");
   });
 });

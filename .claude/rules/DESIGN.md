@@ -467,6 +467,12 @@ portal로 뜨는 동작 컴포넌트(Modal·Sheet·Popover·Select·Dropdown·To
   `{typography.title-md}` + 설교자·날짜 `{typography.datetime}` `{colors.muted}`.
   호버 시 soft drop + 썸네일 1.03배 줌(0.3s ease).
 - **`notice-row`**: 제목 + 날짜의 가로 행, 1px 헤어라인 구분. 클릭 영역은 행 전체.
+- **`month-section`** / **`month-list-row`**: 날짜순 목록 공용 결(설교·공지·주보). 월 제목 `{typography.title-md}` + 2px `{colors.ink}` 하단 룰,
+  행 = 날짜(`11월 1일`) `{typography.datetime}` `{colors.muted}` | (배지) 제목 `{typography.title-md}`(hover primary) + 부제 `{typography.body-sm}` |
+  오른쪽 정보 `{typography.body-sm}`. 1px 헤어라인, 행 전체 링크(PDF는 새 탭 + sr-only 안내), 어드민 액션은 링크 밖 형제. ≥40rem 3칸, 그 미만 세로 쌓기.
+  공지는 고정 공지를 맨 위 "고정 공지" 묶음으로 모으고 나머지를 월별로. 날짜는 서버 문자열 앞 10자에서 읽는다(시간대 밀림 방지).
+- **`bulletin-feature`**: 주보 첫 페이지의 최신 주보 띠 — `sermon-feature`와 같은 결(다크 `{rounded.xl}`, 라벨 "이번 주 주보"/"최근 주보",
+  제목 `{typography.display-lg}`, 우측 "주보 보기" pill 모양). 띠 전체가 PDF 새 탭 링크, 어드민 액션은 띠 아래 우측.
 - **`bulletin-row`**: 주보 행(notice-row 변형). 제목 `{typography.title-sm}` + 예배일
   `{typography.datetime}` `{colors.muted}` + 작성자 `{typography.body-sm}` `{colors.muted}`(없으면 줄 생략).
   행 전체가 새 탭 PDF 링크(`GET /api/media/{id}`), 1px 헤어라인 구분, hover 시 제목 primary 전이.

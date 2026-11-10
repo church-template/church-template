@@ -3,19 +3,22 @@ import type { Metadata } from "next";
 import { Container } from "@/components/shell/Container";
 import { typo } from "@/constants/typography";
 import { cn } from "@/lib/utils";
-import { formatDate } from "@/lib/date";
+import { formatMonthDay, groupByMonth } from "@/lib/monthGroups";
 import { getNotices, type NoticeListParams } from "@/lib/api/notices";
 import { getTags } from "@/lib/api/tags";
-import { NoticeRow } from "@/components/cards/NoticeRow";
+import { MonthSection } from "@/components/common/MonthSection";
+import { MonthListRow } from "@/components/common/MonthListRow";
 import { TagFilter } from "@/components/common/TagFilter";
 import { Pagination } from "@/components/common/Pagination";
 import { EmptyState } from "@/components/common/EmptyState";
 import { SearchPill } from "@/components/common/SearchPill";
 import { NoticeListAction } from "@/components/notices/NoticeAdminActions";
 import { CHURCH_NAME } from "@/constants/church";
+import { NEWS_LIST } from "@/constants/news";
+import type { NoticeCardResponse } from "@/lib/api/types";
 
 export const metadata: Metadata = {
-  title: "공지",
+  title: NEWS_LIST.noticeTitle,
   description: `${CHURCH_NAME} 공지사항 — 교회 소식과 안내를 확인하세요.`,
   alternates: { canonical: "/notices" },
 };
@@ -43,7 +46,18 @@ function parseParams(sp: SearchParams): NoticeListParams {
   };
 }
 
-// 공개 공지 목록. searchParams 접근 → 동적 렌더. 목록·태그 병렬 fetch. 서버 정렬(고정 우선) 신뢰.
+const row = (n: NoticeCardResponse) => (
+  <MonthListRow
+    key={n.id}
+    href={`/notices/${n.id}`}
+    date={formatMonthDay(n.createdAt)}
+    title={n.title}
+    meta={n.author}
+  />
+);
+
+// 공개 공지 목록 — 고정 공지는 맨 위에 따로 모으고, 나머지는 월별 목록(month-section, 설교 목록과 같은 결).
+// searchParams 접근 → 동적 렌더. 목록·태그 병렬 fetch. 서버 정렬(고정 우선·최신순)을 그대로 쓴다.
 export default async function NoticesPage({
   searchParams,
 }: {
@@ -52,11 +66,13 @@ export default async function NoticesPage({
   const sp = await searchParams;
   const params = parseParams(sp);
   const [data, tags] = await Promise.all([getNotices(params), getTags()]);
+  const pinned = data.content.filter((n) => n.isPinned);
+  const rest = data.content.filter((n) => !n.isPinned);
 
   return (
     <Container as="section" className="py-section">
       <div className="flex items-center justify-between gap-base">
-        <h1 className={cn(typo.displayMd, "text-ink")}>공지</h1>
+        <h1 className={cn(typo.displayMd, "text-ink")}>{NEWS_LIST.noticeTitle}</h1>
         <NoticeListAction />
       </div>
 
@@ -66,17 +82,18 @@ export default async function NoticesPage({
       </div>
 
       {data.content.length === 0 ? (
-        <EmptyState message="조건에 맞는 공지가 없습니다." className="mt-xl" />
+        <EmptyState message={NEWS_LIST.noticeEmpty} className="mt-xl" />
       ) : (
-        <div className="mt-xl">
-          {data.content.map((n) => (
-            <NoticeRow
-              key={n.id}
-              href={`/notices/${n.id}`}
-              title={n.title}
-              date={formatDate(n.createdAt)}
-              isPinned={n.isPinned}
-            />
+        <div className="mt-xl flex flex-col gap-xl">
+          {pinned.length > 0 ? (
+            <MonthSection id="pinned" label={NEWS_LIST.pinnedHeading}>
+              {pinned.map(row)}
+            </MonthSection>
+          ) : null}
+          {groupByMonth(rest, (n) => n.createdAt).map((g) => (
+            <MonthSection key={g.key} id={g.key} label={g.label}>
+              {g.items.map(row)}
+            </MonthSection>
           ))}
         </div>
       )}
