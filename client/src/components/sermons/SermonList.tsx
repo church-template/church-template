@@ -1,17 +1,19 @@
 "use client";
+import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { typo } from "@/constants/typography";
+import { SERMON_LIST } from "@/constants/sermons";
 import { Button } from "@/components/ui/Button";
 import { TagFilter } from "@/components/common/TagFilter";
 import { Pagination } from "@/components/common/Pagination";
 import { EmptyState } from "@/components/common/EmptyState";
 import { CardGridSkeleton } from "@/components/common/CardGridSkeleton";
-import { formatDate } from "@/lib/date";
-import { SermonCard } from "@/components/cards/SermonCard";
 import type { SermonListParams } from "@/lib/api/sermons";
 import { SermonSearch } from "./SermonSearch";
 import { ActiveFilters } from "./ActiveFilters";
+import { SermonFeature } from "./SermonFeature";
+import { SermonMonthList } from "./SermonMonthList";
 import { useSermons, useSermonTags } from "./queries";
 
 // URL 파라미터 정규화 — RSC 시절 parseParams와 동일 검증(useSearchParams는 string|null 시그니처).
@@ -34,6 +36,7 @@ function toDate(v: string | null): string | undefined {
 
 // 목록 클라이언트 — URL(?page·?tagId·?q·?preacher·?series·?from·?to)을 쿼리로,
 // 검색/필터/페이지네이션은 URL 갱신 → useSearchParams 재파싱으로 동작(AlbumList 패턴).
+// 화면: 필터 없는 첫 페이지면 최신 설교를 띠로 크게(SermonFeature), 나머지는 월별 줄 목록(SermonMonthList).
 export function SermonList() {
   const searchParams = useSearchParams();
   const params: SermonListParams = {
@@ -45,12 +48,24 @@ export function SermonList() {
     from: toDate(searchParams.get("from")),
     to: toDate(searchParams.get("to")),
   };
+  // 검색·필터 결과에서 첫 항목을 "이번 주 말씀"으로 띄우면 의미가 틀어진다 — 아무 조건 없는 첫 페이지에서만.
+  const { page, ...filters } = params;
+  const showFeature = !page && Object.values(filters).every((v) => v === undefined);
+  const [now] = useState(() => new Date()); // "이번 주" 판정 기준 — 렌더마다 바뀌지 않게 마운트 시 고정
 
   const sermons = useSermons(params);
   const tags = useSermonTags();
+  const content = sermons.data?.content ?? [];
+  const featured = showFeature ? content[0] : undefined;
+  const rest = featured ? content.slice(1) : content;
 
   return (
     <div className="mt-lg flex flex-col gap-base">
+      {featured ? (
+        <div className="mb-lg">
+          <SermonFeature sermon={featured} now={now} />
+        </div>
+      ) : null}
       <SermonSearch />
       <TagFilter tags={tags.data ?? []} />
       <ActiveFilters />
@@ -61,35 +76,23 @@ export function SermonList() {
         </div>
       ) : sermons.isError || !sermons.data ? (
         <div className="flex flex-col items-start gap-sm py-xl">
-          <p className={cn(typo.bodyMd, "text-muted")}>설교를 불러오지 못했습니다.</p>
+          <p className={cn(typo.bodyMd, "text-muted")}>{SERMON_LIST.loadError}</p>
           <Button variant="secondary" onClick={() => sermons.refetch()}>
-            다시 시도
+            {SERMON_LIST.retry}
           </Button>
         </div>
-      ) : sermons.data.content.length === 0 ? (
-        <EmptyState message="조건에 맞는 설교가 없습니다." className="mt-xl" />
+      ) : content.length === 0 ? (
+        <EmptyState message={SERMON_LIST.empty} className="mt-xl" />
       ) : (
         <>
-          <div
-            aria-busy={sermons.isPlaceholderData}
-            className={cn(
-              "mt-xl grid gap-base sm:grid-cols-2 lg:grid-cols-3",
-              sermons.isPlaceholderData && "opacity-60 transition-opacity",
-            )}
-          >
-            {sermons.data.content.map((s) => (
-              <SermonCard
-                key={s.id}
-                href={`/sermons/${s.id}`}
-                title={s.title}
-                preacher={s.preacher}
-                date={formatDate(s.preachedAt)}
-                series={s.series}
-                scripture={s.scripture}
-                tags={s.tags.map((t) => t.name)}
-              />
-            ))}
-          </div>
+          {rest.length > 0 ? (
+            <div
+              aria-busy={sermons.isPlaceholderData}
+              className={cn("mt-xl", sermons.isPlaceholderData && "opacity-60 transition-opacity")}
+            >
+              <SermonMonthList sermons={rest} />
+            </div>
+          ) : null}
           {sermons.data.page.totalPages > 1 ? (
             <div className="mt-xl">
               <Pagination page={sermons.data.page} scroll={false} />

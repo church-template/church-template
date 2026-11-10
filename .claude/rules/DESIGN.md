@@ -456,6 +456,13 @@ portal로 뜨는 동작 컴포넌트(Modal·Sheet·Popover·Select·Dropdown·To
 - **`button-kakao`** / **`button-naver`**: 외부 지도 "…에서 보기" 버튼 전용(오시는 길). 각 서비스 공식 채움색(카카오 `bg-kakao`+검정 글자 / 네이버 `bg-naver`+흰 글자, hover·press는 `brightness`로 절제). **단일 액센트 원칙의 의도적 예외** — 제3자 브랜드라 교회 팔레트가 아니며 이 두 버튼 외엔 쓰지 않는다. 토큰: globals.css `--color-kakao`·`--color-kakao-ink`·`--color-naver`·`--color-naver-on`.
 
 ### 콘텐츠 카드
+- **`sermon-feature`**: 설교 목록(`/sermons`) 상단 최신 말씀 띠. `{colors.surface-dark}` `{rounded.xl}` 전체가 상세 링크.
+  라벨 `{typography.caption-strong}` `{colors.primary-on-dark}`(최근 7일 안이면 "이번 주 말씀", 아니면 "최근 말씀" — 한국 날짜 기준) +
+  본문 구절 `{typography.title-md}` on-dark-soft + 제목 `{typography.display-lg}`(h2) on-dark + 날짜·설교자·시리즈 `{typography.datetime}` +
+  우측 `button-pill-cta` 모양 "말씀 보기"(링크 안 표시용 span — 중첩 인터랙티브 금지). **검색·필터 없는 첫 페이지에서만** 노출.
+- **`sermon-month-list`**: 설교 월별 줄 목록. 월 제목 `{typography.title-md}` + 2px `{colors.ink}` 하단 룰, 행 = 날짜(`11월 1일`) `{typography.datetime}` `{colors.muted}` |
+  제목 `{typography.title-md}`(hover primary) + 시리즈·본문 `{typography.body-sm}` | 설교자 `{typography.body-sm}`, 1px 헤어라인 구분, 행 전체 링크.
+  ≥40rem 3칸, 그 미만 세로 쌓기. 날짜는 `preachedAt` 문자열에서 바로 읽는다(시간대 밀림 방지). 페이지 경계에서 한 달이 나뉘면 양쪽에 같은 달 제목.
 - **`sermon-card`**: 16:9 썸네일(상단, 라운드는 카드와 함께 24px) + 제목
   `{typography.title-md}` + 설교자·날짜 `{typography.datetime}` `{colors.muted}`.
   호버 시 soft drop + 썸네일 1.03배 줌(0.3s ease).
@@ -467,6 +474,17 @@ portal로 뜨는 동작 컴포넌트(Modal·Sheet·Popover·Select·Dropdown·To
   값 `{typography.body-lg}`(전화·이메일은 `tel:`·`mailto:` 링크) + 우측 복사 버튼(lucide `Copy` 20px, 48px 터치 타깃, 복사 후 2초간 `Check` primary).
   **길게 누르기(500ms)로도 복사**되지만 보이지 않는 제스처라 그것만으로는 알 수 없다 — 복사 버튼을 상시 노출하고 목록 위에 안내 한 줄(`{typography.caption}` + `Copy` 16px)을 둔다(고령 사용자).
   복사 결과는 Toast(성공/실패 모두 — 클립보드 실패 시 "직접 선택해 복사" 안내, 침묵 금지). 길게 눌러 복사한 직후의 click(전화 앱 열림)은 1회 억제한다.
+- **`worship-hero`**: 예배 시간 안내(`/worship`) 상단 풀블리드 사진 밴드. 하단 스크림 위 on-dark로 페이지 제목(h1, `{typography.title-md}`) +
+  대표 예배 시간 `{typography.display-mega}`(tnum) + 예배명·장소 `{typography.body-lg}`. **처음 오는 분이 가장 먼저 찾는 주일 시간을 가장 크게** 세운다.
+  높이 `clamp(20rem, 52vh, 30rem)`. 대표 예배는 `WORSHIP_SERVICES`의 `primary`.
+- **`next-service-band`**: "다음 예배" 띠. `{colors.primary-soft}` 배경 `{rounded.xl}`, 라벨 `{typography.caption-strong}` `{colors.primary}` +
+  예배명·요일·시각 `{typography.title-lg}` + 남은 시간 `{typography.body-md}` `{colors.body}`(데스크톱 우측 정렬, 좁은 폭은 세로 쌓기).
+  **한국 시간 기준**으로 클라이언트에서 계산(1분마다 갱신) — 정적 페이지라 서버 렌더에는 자리만 잡아 둔다(레이아웃 밀림 방지).
+  정기 예배만 본다(특별 예배·휴일 변동 미반영).
+- **`sunday-flow`**: 처음 오는 분을 위한 주일 아침 흐름 3단계. 각 단계 = 상단 2px `{colors.hairline}` 룰 위 `{colors.primary}` 점 +
+  시각 `{typography.title-lg}`(tnum) + 제목 `{typography.title-md}` + 설명 `{typography.body-md}`. ≥48rem 3열(가로 타임라인), 그 미만 세로 쌓기.
+- **`worship-weekday-rows`**: 주중 예배 표. 상단 2px `{colors.ink}` 룰 아래 행(1px 헤어라인 구분) = 예배명 `{typography.title-md}` +
+  시간 `{typography.datetime-lg}` `{colors.primary}` + 찬양 시간·설명 `{typography.body-md}`. ≥48rem 3칸, 그 미만 세로 쌓기.
 - **`schedule-card`**: `{colors.surface-soft}` 배경. 예배명 `{typography.title-md}` +
   시간 `{typography.datetime}` + 장소 `{typography.body-sm}`.
 - **`event-card`**: 행사 카드. 날짜 배지(`badge-pill-primary`) + 제목 + 요약.
@@ -543,6 +561,13 @@ portal로 뜨는 동작 컴포넌트(Modal·Sheet·Popover·Select·Dropdown·To
   `{typography.title-md}` + 인도자 `{typography.datetime}` `{colors.muted}`. `sermon-card` 호버(soft drop +
   썸네일 1.03 줌) 재사용. `/departments/{slug}`로 링크, 목록 카드 이미지 = 상세 히어로 이미지(목록↔상세 시각 연속성).
 - **`church-photos`**: 교회사진(`/about/photos`) 공개 페이지. 카테고리 토글(`Tabs` 재사용, 교회 내부/외부)로 사진 그리드를 통째 교체, 썸네일 클릭 시 `Dialog` 확대 모달(좌우 이동·키보드, 이동은 활성 그룹 내부). 콘텐츠는 `CHURCH_PHOTOS` 상수(`public/photos/**` 정적 에셋) 주입, 갤러리 미재사용(자체 컴포넌트)·`<img>` 프레젠테이션 셸. 정적 생성(API 호출 0).
+- **`ministry-showcase`**: 사역 목록(`/departments`). 카드 그리드 대신 **스크롤 고정 쇼케이스** — 부서별 고해상도 단체 사진이 주인공이다.
+  데스크톱(≥64rem): 좌 7 : 우 5. 왼쪽 사진 무대(`{rounded.xl}`, 높이 `min(72vh, 37.5rem)`)가 sticky로 고정되고, 오른쪽 부서 블록(최소 62vh)을
+  스크롤하면 뷰포트 가운데 띠를 지나는 부서로 사진이 크로스페이드된다(IntersectionObserver, opacity만). 좌상단에 `n / 전체` 카운터(`{typography.datetime}`).
+  부서 블록 = 부서명 `{typography.caption-strong}` `{colors.primary}` + 대표 문구 `{typography.display-md}`(h2) + 한 줄 소개 `{typography.body-md}` +
+  모임 시간 `{typography.datetime}` `{colors.muted}` + "자세히 보기" 텍스트 링크(48px). 지나간·다가올 블록은 흐리게(opacity .55) — 지우지 않는다(고령 가독).
+  **<64rem은 고정하지 않는다**: 부서마다 사진(16:10, `{rounded.xl}`) + 글을 세로로 쌓고 흐림도 없다(사진이 화면 폭의 절반으로 쪼그라드는 2컬럼 금지).
+  reduced-motion은 전환 없이 즉시 교체. JS가 없어도 모든 글과 링크는 읽힌다(첫 부서 사진 고정). 데이터는 `DEPARTMENTS`의 `caption`·`summary`·`when`.
 - **`dept-tree`**: 사역(부서) 목록 = 최상위 부서 카드 그리드(조직도 다이어그램 아님 — 탐색 목적·고령 터치·단일 액센트).
   공개 인트로는 **프론트 상수(`DEPARTMENTS`) 구동**(메인처럼 자립, 백엔드 불필요·정적 생성). 하위부서는
   인덱스에 펼치지 않고 각 상세의 `SubDepartments`에서만 노출. (백엔드 `department`는 교인 정보관리·어드민 별개.)

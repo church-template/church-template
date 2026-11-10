@@ -328,13 +328,22 @@ export const WORSHIP = {
   placeHeading: "예배 장소 안내",
   placeLead: "모든 예배는 교회에서 진행됩니다.",
   placeLandmark: "예시 건물",
-  attendHeading: "예배 참석 안내",
-  attendLead: "처음 오시는 분들도 편안하게 참석하실 수 있습니다.",
-  attendNotes: [
-    "오전 10시 40분부터 찬양으로 예배합니다.",
-    "예배 후 간단한 교제 시간이 있습니다.",
-    "주차 공간이 준비되어 있습니다.",
+  // 히어로 사진 — 교회별로 주일예배 사진(public/ 정적 에셋)으로 교체한다. 템플릿은 예시 이미지.
+  hero: { src: "/dept/praise/1.webp", alt: "본당에서 드리는 예배" },
+  nextLabel: "다음 예배",
+  // 처음 오는 분을 위한 주일 아침 흐름 — 기존 "예배 참석 안내" 세 줄을 시간순으로 옮긴 것(같은 사실).
+  flowEyebrow: "처음 오시는 분께",
+  flowHeading: "주일 아침은 이렇게 흘러갑니다",
+  flow: [
+    { time: "10:40", title: "찬양으로 시작", desc: "예배 20분 전부터 함께 찬양합니다." },
+    { time: "11:00", title: "주일예배", desc: "전 성도가 함께 드리는 예배입니다." },
+    {
+      time: "예배 후",
+      title: "교제 시간",
+      desc: "간단한 교제 시간이 있습니다. 주차 공간이 준비되어 있습니다.",
+    },
   ],
+  weekdayHeading: "주중에도 모입니다",
 };
 
 export interface WorshipService {
@@ -343,12 +352,16 @@ export interface WorshipService {
   place: string; // 기존 유지 — 메인 ScheduleCard 소비
   praise?: string; // 찬양 시간 서브라인(없으면 생략)
   notes: string[]; // 예배별 설명 3줄
+  // "다음 예배" 계산용 구조 데이터 — time(표시 문자열)과 같은 사실. 요일은 0=주일 … 6=토, 한국 시간.
+  schedule: { days: number[]; hour: number; minute: number };
+  primary?: boolean; // 예배 안내 히어로에 크게 세우는 대표 예배(주일예배)
 }
 export const WORSHIP_SERVICES: WorshipService[] = [
   {
     name: "새벽예배",
     time: "월~토 오전 5:30",
     place: "본당",
+    schedule: { days: [1, 2, 3, 4, 5, 6], hour: 5, minute: 30 },
     notes: [
       "새벽 기도와 말씀 묵상",
       "하루를 시작하는 은혜로운 시간",
@@ -359,6 +372,8 @@ export const WORSHIP_SERVICES: WorshipService[] = [
     name: "주일예배",
     time: "주일 오전 11:00",
     place: "본당",
+    schedule: { days: [0], hour: 11, minute: 0 },
+    primary: true,
     praise: "오전 10시 40분 찬양",
     notes: [
       "주일 대예배 시간",
@@ -370,6 +385,7 @@ export const WORSHIP_SERVICES: WorshipService[] = [
     name: "수요예배",
     time: "수요일 오후 7:20",
     place: "본당",
+    schedule: { days: [3], hour: 19, minute: 20 },
     praise: "오후 7시 찬양",
     notes: [
       "주중 말씀 은혜를 받는 시간",
@@ -381,6 +397,7 @@ export const WORSHIP_SERVICES: WorshipService[] = [
     name: "학생·청년예배",
     time: "토요일 오전 11:00",
     place: "본당",
+    schedule: { days: [6], hour: 11, minute: 0 },
     notes: [
       "주말 예배 시간",
       "자유롭고 은혜로운 분위기",

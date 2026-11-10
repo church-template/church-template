@@ -19,13 +19,13 @@ function stubBrowserApis() {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("DepartmentsPage (사역 목록)", () => {
-  it("타이틀과 사역 부서 카드를 렌더한다(상수 구동)", () => {
+  it("헤드라인과 부서별 소개·상세 링크를 렌더한다(상수 구동)", () => {
     stubBrowserApis();
     render(<DepartmentsPage />);
-    expect(screen.getByRole("heading", { name: DEPT_PAGE.title })).toBeDefined();
-    // 카드 이름은 h3(level 3) — 헤더 메가메뉴의 동명 nav 링크(<a>)와 충돌 방지
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(DEPT_PAGE.headline.join(""));
     const first = DEPARTMENTS[0];
-    const heading = screen.getByRole("heading", { name: first.name, level: 3 });
-    expect(heading.closest("a")?.getAttribute("href")).toBe(`/departments/${first.slug}`);
+    expect(
+      screen.getByRole("link", { name: `${first.name} ${DEPT_PAGE.more}` }).getAttribute("href"),
+    ).toBe(`/departments/${first.slug}`);
   });
 });

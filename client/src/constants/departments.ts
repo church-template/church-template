@@ -40,6 +40,9 @@ export interface Department {
   programs?: DeptProgram[];
   gallery?: DeptPhoto[];
   invite?: { heading: string; body: string };
+  // 사역 목록(ministry-showcase) 전용 — 상세의 description·info를 목록 길이로 줄인 것(값은 같은 사실).
+  summary?: string; // 한 줄 소개(평문)
+  when?: string; // 모임 시간
 }
 
 const FALLBACK_THUMB = "/dept/default.webp";
@@ -62,6 +65,8 @@ export const DEPARTMENTS: Department[] = [
       "중·고등학생이 **말씀과 예배** 안에서 건강하게 자라가는 공동체입니다.\n\n매주 토요일 오전 11시, 학생·청년이 함께 예배하며 찬양과 말씀, 소그룹 나눔으로 모입니다.",
     media: img("student", "학생부"),
     caption: ["말씀으로 자라는", "다음 세대"],
+    summary: "중·고등학생이 말씀과 예배 안에서 건강하게 자라가는 공동체입니다.",
+    when: "매주 토요일 오전 11시",
     intro: {
       heading: "학생부 소개",
       lead: "중·고등학생들이 하나님의 사랑 안에서 건강하게 성장할 수 있도록 돕는 사역입니다. 또래 친구들과 함께 신앙을 배우고 나누며, 꿈과 비전을 발견해 나가세요.",
@@ -107,6 +112,8 @@ export const DEPARTMENTS: Department[] = [
       "대학생과 직장인 청년이 **예배와 교제**로 신앙의 뿌리를 내리는 공동체입니다.\n\n각자의 자리에서 그리스도의 제자로 살아가며, 진솔한 나눔과 깊이 있는 말씀으로 함께 성장합니다.",
     media: img("youth", "청년부"),
     caption: ["청년의 때에", "주를 만나다"],
+    summary: "대학생과 직장인 청년이 예배와 교제로 신앙의 뿌리를 내리는 공동체입니다.",
+    when: "매주 토요일 오전 11시",
     intro: {
       heading: "청년부 소개",
       lead: "대학생과 직장인 청년들이 삶의 자리에서 그리스도의 제자로 살아가도록 돕는 사역입니다. 진솔한 나눔과 깊이 있는 말씀 안에서 함께 신앙의 뿌리를 내려가세요.",
@@ -152,6 +159,8 @@ export const DEPARTMENTS: Department[] = [
       "찬양과 경배로 **예배를 섬기는** 찬양팀입니다.\n\n리드보컬과 악기, 음향·방송이 한 마음으로 성도들의 마음을 모아 하나님께 영광을 돌립니다.",
     media: img("praise", "예배부"),
     caption: ["온 맘 다해", "주를 찬양하라"],
+    summary: "찬양과 경배로 예배를 섬기는 찬양팀입니다.",
+    when: "매주 주일 오전 9시 30분",
     intro: {
       heading: "예배부 소개",
       lead: "찬양과 경배로 예배를 섬기는 찬양팀입니다. 리드보컬·악기·음향·방송이 한마음으로 성도들의 마음을 모아 하나님께 영광을 올려드립니다.",
@@ -197,6 +206,8 @@ export const DEPARTMENTS: Department[] = [
       "남성 성도들이 **섬김과 봉사**로 교회를 세워가는 공동체입니다.\n\n예배와 선교, 교회 시설 섬김과 형제 교제로 가정과 교회의 영적 리더로 함께 성장합니다.",
     media: img("men", "남선교회"),
     caption: ["섬김으로 세우는", "믿음의 공동체"],
+    summary: "남성 성도들이 섬김과 봉사로 교회를 세워가는 공동체입니다.",
+    when: "매월 첫째 주일 오후",
     intro: {
       heading: "남선교회 소개",
       lead: "남성 성도들이 섬김과 봉사로 교회를 세워가는 공동체입니다. 예배와 선교, 교회 시설을 섬기며 형제의 교제 안에서 가정과 교회의 영적 리더로 함께 성장합니다.",
@@ -242,6 +253,8 @@ export const DEPARTMENTS: Department[] = [
       "여성 성도들이 **기도와 나눔**으로 함께하는 공동체입니다.\n\n영성 훈련과 사랑의 봉사, 따뜻한 자매애로 가정과 교회를 섬기며 아름답게 성장합니다.",
     media: img("women", "여선교회"),
     caption: ["기도로 함께하는", "동역의 자리"],
+    summary: "여성 성도들이 기도와 나눔으로 함께하는 공동체입니다.",
+    when: "매월 둘째 주일 오후",
     intro: {
       heading: "여선교회 소개",
       lead: "여성 성도들이 기도와 나눔으로 함께하는 공동체입니다. 영성 훈련과 사랑의 봉사, 따뜻한 자매애 안에서 가정과 교회를 섬기며 아름답게 성장합니다.",
@@ -287,6 +300,10 @@ export const DEPT_PAGE = {
   eyebrow: "사역",
   title: "사역 안내",
   empty: "등록된 사역이 없습니다.",
+  listEyebrow: "함께 예배하고 함께 자라는 교회",
+  headline: ["함께 예배하고,", "함께 섬기는 사역"],
+  lead: "내려가며 한 부서씩 만나 보세요.",
+  more: "자세히 보기",
   leaderLabel: "인도",
   subHeading: "하위 부서",
 } as const;

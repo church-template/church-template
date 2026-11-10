@@ -1,0 +1,14 @@
+/* sermon-month-list 행 — 넓은 폭은 날짜 | 제목·부제 | 설교자 3칸, 좁은 폭은 세로로 쌓는다. */
+.row {
+  display: grid;
+  gap: var(--spacing-xxs);
+  padding: var(--spacing-md) var(--spacing-xxs);
+  border-bottom: 1px solid var(--color-hairline);
+}
+@media (min-width: 40rem) {
+  .row {
+    grid-template-columns: 7.5rem 1fr auto;
+    gap: var(--spacing-lg);
+    align-items: baseline;
+  }
+}
