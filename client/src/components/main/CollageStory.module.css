@@ -1,0 +1,115 @@
+/* collage-story — 기본은 정적 목록(사진 카드 + 글을 세로로). JS가 장착(data-armed)하면 히어로처럼 화면에 고정된
+   전체 화면 장면이 되고, 스크롤만큼 사진이 제자리에서 페이드로 바뀐다(CollageStory.tsx). 색·라운드는 토큰이 단일 진실. */
+.root {
+  background: var(--color-surface-dark);
+  padding-block: var(--spacing-section);
+}
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: var(--spacing-sm);
+}
+.scenes {
+  display: grid;
+  gap: var(--spacing-xl);
+  max-width: var(--container-max);
+  margin: var(--spacing-xl) auto 0;
+  padding-inline: var(--container-padding);
+}
+.photo {
+  position: relative;
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  border-radius: var(--radius-xl);
+  background: var(--color-surface-dark-elevated);
+}
+.photo img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 28%; /* 얼굴이 위쪽에 있는 사진들 — 머리가 잘리지 않게 */
+}
+.backdrop {
+  display: none;
+}
+/* 정적 목록에서는 글이 사진 카드 바로 아래 — 컨테이너 여백은 .scenes가 이미 갖는다 */
+.capWrap {
+  padding-inline: 0;
+}
+.cap {
+  margin-top: var(--spacing-base);
+}
+
+/* ===== 장착 후: 전체 화면 고정 + 스크롤 페이드 ===== */
+.root[data-armed] {
+  height: calc(var(--scenes) * 100vh); /* 고정 화면 1 + 전환(장면 수 - 1)번 × 100vh */
+  padding-block: 0;
+}
+.root[data-armed] .sticky {
+  position: sticky;
+  top: var(--spacing-nav); /* 고정 헤더 아래부터 — 사진이 헤더 밑에 가려지지 않게 */
+  height: calc(100vh - var(--spacing-nav));
+  height: calc(100dvh - var(--spacing-nav));
+  overflow: hidden;
+}
+.root[data-armed] .head {
+  position: absolute;
+  inset: var(--spacing-xl) 0 auto;
+  z-index: 2;
+}
+.root[data-armed] .scenes {
+  display: block;
+  position: absolute;
+  inset: 0;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+.root[data-armed] .scene {
+  position: absolute;
+  inset: 0;
+  will-change: opacity;
+}
+/* JS 첫 프레임 전: 첫 장면만 보이게(겹쳐 보이는 깜빡임 방지) */
+.root[data-armed] .scene:not(:first-child) {
+  opacity: 0;
+}
+.root[data-armed] .photo {
+  position: absolute;
+  inset: 0;
+  aspect-ratio: auto;
+  border-radius: 0;
+}
+/* 글이 읽히도록 사진 위아래를 어둡게 */
+.root[data-armed] .photo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to top, color-mix(in srgb, var(--color-surface-dark) 88%, transparent), transparent 55%),
+    linear-gradient(to bottom, color-mix(in srgb, var(--color-surface-dark) 55%, transparent), transparent 30%);
+}
+.root[data-armed] .capWrap {
+  position: absolute;
+  inset: auto 0 var(--spacing-xl);
+  padding-inline: var(--container-padding);
+}
+.root[data-armed] .cap {
+  margin-top: 0;
+  will-change: opacity;
+}
+/* 세로 화면: 사진을 자르지 않는다 — 원본 비율로 세우고 뒤에 같은 사진을 흐리게 깐다 */
+@media (max-aspect-ratio: 1 / 1) {
+  .root[data-armed] .backdrop {
+    display: block;
+    filter: blur(24px) brightness(0.5);
+    scale: 1.15;
+  }
+  .root[data-armed] .picture {
+    top: 8%;
+    height: 62%;
+    object-fit: contain;
+  }
+}

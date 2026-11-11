@@ -32,6 +32,11 @@ export function nextService<T extends Scheduled>(services: T[], now: Date): Next
   return best;
 }
 
+/** 한국 시간 기준 요일(0=주일 … 6=토) — 홈 예배 요일 칩의 "오늘" 표시 */
+export function kstWeekday(now: Date): number {
+  return new Date(now.getTime() + KST_OFFSET_MS).getUTCDay();
+}
+
 export function formatSlot(day: number, hour: number, minute: number): string {
   const meridiem = hour < 12 ? "오전" : "오후";
   const h = hour % 12 || 12;

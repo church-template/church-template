@@ -6,12 +6,14 @@ import { PastorQuote } from "./PastorQuote";
 afterEach(() => vi.unstubAllGlobals());
 
 describe("PastorQuote", () => {
-  it("핵심 인용문과 직분·이름 배지를 렌더한다", () => {
+  it("맺음말 인용문과 직분·이름 서명을 렌더한다", () => {
     vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: true })));
     const { container } = render(<PastorQuote />);
     expect(screen.getByText(PASTOR.pullQuote)).toBeDefined();
-    expect(screen.getByText(`${PASTOR.position} ${PASTOR.name}`)).toBeDefined();
-    // 장식 인용 글리프(lucide) 존재
-    expect(container.querySelector("svg")).not.toBeNull();
+    const sign = container.querySelector("figcaption");
+    expect(sign?.textContent).toContain(PASTOR.position);
+    expect(sign?.textContent).toContain(PASTOR.name);
+    // 편지의 맺음말 — 카드·장식 글리프 없이 글만 둔다
+    expect(container.querySelector("svg")).toBeNull();
   });
 });

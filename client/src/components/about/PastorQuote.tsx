@@ -1,28 +1,28 @@
-import { Quote } from "lucide-react";
 import { Container } from "@/components/shell/Container";
 import { Reveal } from "@/components/main/Reveal";
-import { Badge } from "@/components/ui/Badge";
 import { typo } from "@/constants/typography";
 import { cn } from "@/lib/utils";
 import { PASTOR } from "@/constants/content";
 
-// 밴드2 — 다크 밴드 위 elevated 카드(인용). DESIGN '깊이가 더 필요하면 다크 밴드 elevated'(새 그림자 0).
-// primary 액센트는 이 페이지에서 Badge 1회만 등장(희소할수록 강하다).
+// 밴드2 — 편지의 맺음말. 본문과 같은 흰 캔버스에서 헤어라인 하나로만 끊고, 인용문 뒤에 서명을 둔다
+// (카드·다크 밴드·장식 글리프 없음 — 인사말이 편지이므로 끝도 편지처럼).
+// 4fr/8fr 그리드는 PastorIntro와 같은 값 — 맺음말이 본문 칼럼에 맞춰 선다.
 export function PastorQuote() {
   return (
-    <section className="bg-surface-dark py-section">
+    <section className="bg-canvas pb-section">
       <Container>
-        <Reveal>
-          <figure className="rounded-xl bg-surface-dark-elevated p-xxl">
-            <Quote size={32} aria-hidden className="text-on-dark-soft" />
-            <blockquote className={cn(typo.displayLg, "mt-base text-on-dark")}>
-              {PASTOR.pullQuote}
-            </blockquote>
-            <figcaption className="mt-lg">
-              <Badge variant="primary">{`${PASTOR.position} ${PASTOR.name}`}</Badge>
-            </figcaption>
-          </figure>
-        </Reveal>
+        <div className="grid gap-xxl lg:grid-cols-[4fr_8fr]">
+          <div aria-hidden className="hidden lg:block" />
+          <Reveal>
+            <figure className="border-t border-hairline pt-xxl break-keep">
+              <blockquote className={cn(typo.displayLg, "text-ink")}>{PASTOR.pullQuote}</blockquote>
+              <figcaption className="mt-xl flex items-baseline justify-end gap-sm">
+                <span className={cn(typo.bodySm, "text-muted")}>{PASTOR.position}</span>
+                <span className={cn(typo.displaySm, "text-ink")}>{PASTOR.name}</span>
+              </figcaption>
+            </figure>
+          </Reveal>
+        </div>
       </Container>
     </section>
   );

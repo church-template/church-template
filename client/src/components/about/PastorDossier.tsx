@@ -13,7 +13,7 @@ import { typo } from "@/constants/typography";
 import { cn } from "@/lib/utils";
 import { PASTOR, type PastorPhilosophyKey } from "@/constants/content";
 
-// 철학 키→아이콘 매핑(상수는 직렬화 키만, 색은 currentColor=ink 상속 — MinistryCards 선례).
+// 철학 키→아이콘 매핑(상수는 직렬화 키만, 색은 currentColor=muted 상속 — MinistryCards 선례).
 const PHILOSOPHY_ICONS: Record<PastorPhilosophyKey, LucideIcon> = {
   worship: Church,
   bible: BookOpen,
@@ -23,38 +23,45 @@ const PHILOSOPHY_ICONS: Record<PastorPhilosophyKey, LucideIcon> = {
   mission: Send,
 };
 
-// 밴드3 — 회색 밴드. 약력 헤어라인 행(세로) + 목회 철학 풀폭 3-up 아이콘 그리드.
+// 밴드3 — 회색 밴드. 좌 약력 : 우 목회 철학 = 5:7 두 칸, 둘 다 2px 룰 + 헤어라인 줄 목록(month-list-row 결).
+// 카드를 쓰지 않는다 — 한 줄짜리 항목 여섯 개를 카드로 키우면 내용보다 틀이 커진다.
+const HEADING = "border-b-2 border-ink pb-sm text-ink";
+const ROW = "border-b border-hairline py-base";
+
 export function PastorDossier() {
   return (
     <section className="bg-surface-soft py-section">
       <Container>
-        <h2 className={cn(typo.titleLg, "text-ink")}>{PASTOR.credentials.heading}</h2>
-        <ul className="mt-lg">
-          {PASTOR.credentials.items.map((item, i) => (
-            <li key={item} className="border-t border-hairline-soft first:border-t-0">
-              <Reveal delay={i * 120}>
-                <p className={cn(typo.bodyLg, "py-base text-body")}>{item}</p>
-              </Reveal>
-            </li>
-          ))}
-        </ul>
+        <div className="grid gap-xxl break-keep lg:grid-cols-[5fr_7fr]">
+          <Reveal>
+            <h2 className={cn(typo.titleMd, HEADING)}>{PASTOR.credentials.heading}</h2>
+            <ul>
+              {PASTOR.credentials.items.map((item) => (
+                <li key={item} className={cn(typo.bodyMd, ROW, "text-body")}>
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </Reveal>
 
-        <h2 className={cn(typo.titleLg, "mt-xl text-ink")}>{PASTOR.philosophy.heading}</h2>
-        <ul className="mt-lg grid gap-base sm:grid-cols-2 lg:grid-cols-3">
-          {PASTOR.philosophy.items.map((item, i) => {
-            const Icon = PHILOSOPHY_ICONS[item.key];
-            return (
-              <li key={item.key} className="h-full">
-                <Reveal delay={i * 120} className="h-full">
-                  <div className="h-full rounded-xl bg-canvas p-xl">
-                    <Icon size={32} aria-hidden className="text-ink" />
-                    <p className={cn(typo.titleMd, "mt-base text-ink")}>{item.text}</p>
-                  </div>
-                </Reveal>
-              </li>
-            );
-          })}
-        </ul>
+          <Reveal delay={120}>
+            <h2 className={cn(typo.titleMd, HEADING)}>{PASTOR.philosophy.heading}</h2>
+            <ol>
+              {PASTOR.philosophy.items.map((item, i) => {
+                const Icon = PHILOSOPHY_ICONS[item.key];
+                return (
+                  <li key={item.key} className={cn(ROW, "flex items-center gap-base")}>
+                    <span aria-hidden className={cn(typo.datetime, "text-muted")}>
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <span className={cn(typo.titleMd, "flex-1 text-ink")}>{item.text}</span>
+                    <Icon size={24} aria-hidden className="shrink-0 text-muted" />
+                  </li>
+                );
+              })}
+            </ol>
+          </Reveal>
+        </div>
       </Container>
     </section>
   );

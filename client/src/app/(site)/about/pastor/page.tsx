@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/about/pastor" },
 };
 
-// 공개 인사말 — 상수 구동 서버 컴포넌트. 흰→다크(인용)→회색→전역 다크 CTA 밴드 리듬.
+// 공개 인사말 — 상수 구동 서버 컴포넌트. 흰(본문·맺음말)→회색(약력·철학)→전역 다크 CTA 밴드 리듬.
 export default function PastorPage() {
   return (
     <>

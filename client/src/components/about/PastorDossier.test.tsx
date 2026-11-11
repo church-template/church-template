@@ -24,4 +24,12 @@ describe("PastorDossier", () => {
     const { container } = render(<PastorDossier />);
     expect(container.querySelectorAll("svg").length).toBe(PASTOR.philosophy.items.length);
   });
+
+  it("철학은 번호(01~)가 붙은 순서 목록이다", () => {
+    vi.stubGlobal("matchMedia", vi.fn(() => ({ matches: true })));
+    const { container } = render(<PastorDossier />);
+    const rows = container.querySelectorAll("ol > li");
+    expect(rows.length).toBe(PASTOR.philosophy.items.length);
+    expect(rows[0].textContent).toContain("01");
+  });
 });

@@ -1,0 +1,132 @@
+/* history-timeline — 가운데(좁은 폭은 왼쪽) 세로선이 스크롤만큼 primary로 채워지고, 선이 점에 닿은 항목이 켜진다.
+   숨김 연출은 JS가 붙은 뒤([data-armed])에만 건다 — JS 실패·SSR·reduced-motion에선 처음부터 다 보인다. */
+.list {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xxl);
+  padding-left: var(--spacing-xxl);
+}
+.track {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--spacing-xs);
+  width: 2px;
+  background: var(--color-hairline);
+}
+.fill {
+  display: block;
+  height: 100%;
+  background: var(--color-primary);
+  transform-origin: top;
+  transform: scaleY(var(--progress, 1));
+}
+.item {
+  position: relative;
+  display: grid;
+  gap: var(--spacing-base);
+}
+.dot {
+  position: absolute;
+  top: var(--spacing-xs);
+  left: calc(var(--spacing-xxl) * -1 + var(--spacing-xs) + 1px);
+  width: var(--spacing-base);
+  height: var(--spacing-base);
+  margin-left: calc(var(--spacing-base) / -2);
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  border: 2px solid var(--color-primary);
+  transition:
+    background 0.3s ease,
+    border-color 0.3s ease,
+    scale 0.3s ease;
+}
+.media {
+  overflow: hidden;
+  aspect-ratio: 16 / 10;
+  border-radius: var(--radius-xl);
+  background: var(--color-surface-strong);
+}
+.media img,
+.media video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: scale 1.2s ease;
+}
+.year {
+  color: var(--color-primary);
+  transition: color 0.4s ease;
+}
+.text {
+  transition: opacity 0.4s ease;
+}
+
+/* 연출: 켜지기 전엔 흐린 연도·빈 점·내려앉은 사진 */
+.armed .item:not([data-on]) .dot {
+  background: var(--color-canvas);
+  border-color: var(--color-hairline);
+}
+.armed .item:not([data-on]) .year {
+  color: var(--color-muted-soft);
+}
+.armed .item:not([data-on]) .text {
+  opacity: 0.35;
+}
+.armed .media {
+  opacity: 0;
+  translate: 0 2rem;
+  transition:
+    opacity 0.6s ease,
+    translate 0.6s ease;
+}
+.armed .item:not([data-on]) .media img,
+.armed .item:not([data-on]) .media video {
+  scale: 1.1;
+}
+.armed .item[data-on] .media {
+  opacity: 1;
+  translate: 0 0;
+}
+.armed .item[data-on] .dot {
+  scale: 1.25;
+}
+
+/* ≥48rem: 선을 가운데로, 사진·글을 좌우 번갈아(DOM 순서는 글 → 사진 유지) */
+@media (min-width: 48rem) {
+  .list {
+    padding-left: 0;
+  }
+  .track {
+    left: 50%;
+    margin-left: -1px;
+  }
+  .item {
+    grid-template-columns: 1fr 1fr;
+    column-gap: calc(var(--spacing-xxl) * 2);
+    align-items: center;
+  }
+  .dot {
+    top: 50%;
+    left: 50%;
+    margin-top: calc(var(--spacing-base) / -2);
+  }
+  .item:nth-child(odd) .text {
+    text-align: right;
+  }
+  .item:nth-child(even) .text {
+    order: 2;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dot,
+  .year,
+  .text,
+  .media,
+  .media img,
+  .media video {
+    transition: none;
+  }
+}

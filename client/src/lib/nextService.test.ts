@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatRemaining, formatSlot, nextService } from "./nextService";
+import { formatRemaining, formatSlot, kstWeekday, nextService } from "./nextService";
 
 const svc = (name: string, days: number[], hour: number, minute: number) => ({
   name,
@@ -65,5 +65,12 @@ describe("표시 문자열", () => {
     expect(formatRemaining(722)).toBe("12시간 2분 뒤");
     expect(formatRemaining(1440)).toBe("1일 뒤");
     expect(formatRemaining(3 * 1440 + 5 * 60 + 9)).toBe("3일 5시간 뒤");
+  });
+});
+
+describe("kstWeekday", () => {
+  it("한국 시간 기준 요일 — UTC로는 화요일 밤이어도 한국은 수요일", () => {
+    expect(kstWeekday(new Date("2026-11-10T16:00:00Z"))).toBe(3); // KST 11/11(수) 01:00
+    expect(kstWeekday(new Date("2026-11-08T02:00:00Z"))).toBe(0); // KST 11/8(주일) 11:00
   });
 });

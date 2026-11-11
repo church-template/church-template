@@ -1,7 +1,7 @@
 // 교회 고유값·콘텐츠 상수.
 // "환경"이 아니라 "교회"마다 다를 뿐이라 env가 아니라 상수로 둔다(매직스트링 방지).
 // 컴포넌트는 이 상수를 import해서 쓴다 — 문자열 인라인 금지(가이드 12장).
-import type { CollageTile, HeroMedia } from "@/hero/types";
+import type { HeroMedia } from "@/hero/types";
 
 export const CHURCH_NAME = "예시교회";
 // 정식 명칭 — 저작권·약관 등 공식 표기용. 헤더·푸터 로고는 약칭 CHURCH_NAME을 쓴다.
@@ -41,15 +41,19 @@ export const HERO_CAPTION = [
   "예시교회에 오신 것을 환영합니다",
 ];
 
-// 콜라주 타일 — 데스크톱은 좌우 2컬럼(0·2번 왼쪽 / 1·3번 오른쪽), 모바일은 세로 스택.
-// aspect는 원본 픽셀 비율 그대로여야 한다: HeroReveal이 이 값에서 컬럼 폭을 역산해 좌·우 컬럼과
-// 중앙 카드의 높이를 맞춘다(크롭 0). 값이 틀리면 정렬이 조용히 어긋난다.
-// 장식 미디어라 alt 기본 "". 의미 있는 사진으로 교체 시 alt도 채운다.
-export const COLLAGE_TILES: CollageTile[] = [
-  { src: "/collage-1.jpeg", alt: "", aspect: 1160 / 992 },
-  { src: "/collage-2.jpeg", alt: "", aspect: 4032 / 2268 },
-  { src: "/collage-3.jpeg", alt: "", aspect: 5184 / 3456 },
-  { src: "/collage-4.jpeg", alt: "", aspect: 4000 / 2252 },
+// 홈 "이렇게 모이고, 나눕니다" 장면 — 사진 한 장 = 목록 한 줄(제목·설명). 큰 사진 무대에 object-fit으로
+// 채우므로 비율은 필요 없다. 사진이 장식이고 제목·설명이 같은 내용을 텍스트로 전하므로 alt는 비운다.
+// 제목·설명은 예시 문구 — 교회별로 교체.
+export interface CollageScene {
+  src: string;
+  title: string;
+  desc: string;
+}
+export const COLLAGE_TILES: CollageScene[] = [
+  { src: "/collage-1.jpeg", title: "함께 드리는 기도", desc: "하루를 말씀과 기도로 여는 시간" },
+  { src: "/collage-2.jpeg", title: "함께 드리는 예배", desc: "온 세대가 한자리에 모이는 주일" },
+  { src: "/collage-3.jpeg", title: "예배 후 쉼터", desc: "차 한 잔 나누며 이야기하는 시간" },
+  { src: "/collage-4.jpeg", title: "한 식탁의 교제", desc: "예배 후 함께 먹는 점심" },
 ];
 
 // 교회 소재지·연락처 — 푸터·오시는 길에서 소비. 교회별 값이라 상수(env 아님, 스펙 D2).

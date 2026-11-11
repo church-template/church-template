@@ -460,6 +460,8 @@ portal로 뜨는 동작 컴포넌트(Modal·Sheet·Popover·Select·Dropdown·To
   라벨 `{typography.caption-strong}` `{colors.primary-on-dark}`(최근 7일 안이면 "이번 주 말씀", 아니면 "최근 말씀" — 한국 날짜 기준) +
   본문 구절 `{typography.title-md}` on-dark-soft + 제목 `{typography.display-lg}`(h2) on-dark + 날짜·설교자·시리즈 `{typography.datetime}` +
   우측 `button-pill-cta` 모양 "말씀 보기"(링크 안 표시용 span — 중첩 인터랙티브 금지). **검색·필터 없는 첫 페이지에서만** 노출.
+  홈 "최신 설교"도 같은 띠를 쓴다(제목만 h3 — 섹션 h2 아래) + 나머지는 "지난 말씀"(`{typography.title-md}` + 2px `{colors.ink}` 하단 룰)
+  아래 `month-list-row` 줄 목록 + "설교 전체 보기" 링크. 카드 그리드를 쓰지 않는다(이번 주 말씀이 묻히지 않게).
 - **`sermon-month-list`**: 설교 월별 줄 목록. 월 제목 `{typography.title-md}` + 2px `{colors.ink}` 하단 룰, 행 = 날짜(`11월 1일`) `{typography.datetime}` `{colors.muted}` |
   제목 `{typography.title-md}`(hover primary) + 시리즈·본문 `{typography.body-sm}` | 설교자 `{typography.body-sm}`, 1px 헤어라인 구분, 행 전체 링크.
   ≥40rem 3칸, 그 미만 세로 쌓기. 날짜는 `preachedAt` 문자열에서 바로 읽는다(시간대 밀림 방지). 페이지 경계에서 한 달이 나뉘면 양쪽에 같은 달 제목.
@@ -471,6 +473,9 @@ portal로 뜨는 동작 컴포넌트(Modal·Sheet·Popover·Select·Dropdown·To
   행 = 날짜(`11월 1일`) `{typography.datetime}` `{colors.muted}` | (배지) 제목 `{typography.title-md}`(hover primary) + 부제 `{typography.body-sm}` |
   오른쪽 정보 `{typography.body-sm}`. 1px 헤어라인, 행 전체 링크(PDF는 새 탭 + sr-only 안내), 어드민 액션은 링크 밖 형제. ≥40rem 3칸, 그 미만 세로 쌓기.
   공지는 고정 공지를 맨 위 "고정 공지" 묶음으로 모으고 나머지를 월별로. 날짜는 서버 문자열 앞 10자에서 읽는다(시간대 밀림 방지).
+- **`news-tabs`**: 홈 "교회 소식" — 공지·다가오는 일정을 `Tabs` 하나로 묶는다(처음엔 공지). 두 탭 모두 `month-list-row` 줄 목록
+  (공지 = 날짜·고정 배지·제목 / 일정 = 날짜·제목·시간·장소, 종일은 시간 생략) + 탭마다 "전체 보기" 링크(`{typography.button}` primary, 48px).
+  흰 캔버스 — 앞의 최신 설교(soft 밴드)와 교차. 정렬은 서버 보장(재정렬 금지).
 - **`bulletin-feature`**: 주보 첫 페이지의 최신 주보 띠 — `sermon-feature`와 같은 결(다크 `{rounded.xl}`, 라벨 "이번 주 주보"/"최근 주보",
   제목 `{typography.display-lg}`, 우측 "주보 보기" pill 모양). 띠 전체가 PDF 새 탭 링크, 어드민 액션은 띠 아래 우측.
 - **`bulletin-row`**: 주보 행(notice-row 변형). 제목 `{typography.title-sm}` + 예배일
@@ -486,7 +491,10 @@ portal로 뜨는 동작 컴포넌트(Modal·Sheet·Popover·Select·Dropdown·To
 - **`next-service-band`**: "다음 예배" 띠. `{colors.primary-soft}` 배경 `{rounded.xl}`, 라벨 `{typography.caption-strong}` `{colors.primary}` +
   예배명·요일·시각 `{typography.title-lg}` + 남은 시간 `{typography.body-md}` `{colors.body}`(데스크톱 우측 정렬, 좁은 폭은 세로 쌓기).
   **한국 시간 기준**으로 클라이언트에서 계산(1분마다 갱신) — 정적 페이지라 서버 렌더에는 자리만 잡아 둔다(레이아웃 밀림 방지).
-  정기 예배만 본다(특별 예배·휴일 변동 미반영).
+  정기 예배만 본다(특별 예배·휴일 변동 미반영). 홈 "예배 시간 안내"도 이 띠를 그대로 쓴다.
+- **`worship-day-filter`**: 홈 예배 섹션의 요일 칩 + `schedule-card` 그리드(≥64rem 4열). 칩 = "전체"·주일~토(56px·최소 폭 56px, `{rounded.lg}`,
+  `{typography.button}`(20px 600), 칩 간격 `{spacing.sm}`, 눌림 `{colors.ink}` 채움·on-dark / 기본 hairline 보더). 한국 시간 기준 오늘 칩에 "· 오늘"(클라이언트에서만 — 서버는 시각을 모름).
+  요일을 누르면 그날 드리는 예배 카드만 2px `{colors.primary}` 링, 나머지는 opacity .55(지우지 않는다 — 고령 가독). 좁은 폭은 칩 한 줄 가로 스크롤.
 - **`sunday-flow`**: 처음 오는 분을 위한 주일 아침 흐름 3단계. 각 단계 = 상단 2px `{colors.hairline}` 룰 위 `{colors.primary}` 점 +
   시각 `{typography.title-lg}`(tnum) + 제목 `{typography.title-md}` + 설명 `{typography.body-md}`. ≥48rem 3열(가로 타임라인), 그 미만 세로 쌓기.
 - **`worship-weekday-rows`**: 주중 예배 표. 상단 2px `{colors.ink}` 룰 아래 행(1px 헤어라인 구분) = 예배명 `{typography.title-md}` +
@@ -508,30 +516,16 @@ portal로 뜨는 동작 컴포넌트(Modal·Sheet·Popover·Select·Dropdown·To
   CTA 2개(primary + outline-on-dark). 상하 96px.
 
 ### 연출
-- **`media-collage`**: 메인 히어로(14A)와 한 몸인 스크럽 구간(`HeroReveal`). 풀스크린 영상이
-  **풀스크린을 유지한 채** 포스터로 크로스페이드되고(축소 없음), 그 포스터가 흰 캔버스로 페이드
-  아웃하면서 사진 4장이 좌·우 2컬럼 격자(`{rounded.xl}` + hairline)로 흘러 들어온다 — 좌 컬럼은
-  아래에서, 우 컬럼은 위에서. 가장자리에서 날아오는 방식이 아니다.
-  **히어로 미디어는 카드로 남지 않는다**: 창으로 들여다보는 축소 카드는 포스터 면적의 일부만
-  보여주면서 컨테이너 폭의 절반을 먹어 사진을 작게 만들었다. 풀스크린에서 제 몫을 다 보여준 뒤
-  비켜주고, 그 폭 전부를 사진이 가져간다.
-  **슬롯에 사진을 맞추지 않고 사진 비율에 슬롯을 맞춘다**: 컬럼 폭을 사진 비율에서 역산해 좌·우
-  컬럼 높이를 일치시키므로 크롭 0이다(두 컬럼 폭이 서로 다른 비대칭이 그 대가 — 의도된 결과).
-  콜라주 폭은 `{layout.container-max}`에 캡되고(콘텐츠 규칙 — 히어로 미디어만 풀블리드), 헤더
-  아래 남는 높이에도 캡된다(짧은 뷰포트에서 상단 타일이 헤더에 잘리지 않게).
-  transform/opacity만 사용(reflow 금지).
-  **좁은 폭(<640)은 격자 대신 장면 단위로 넘긴다**: 2컬럼이면 사진이 화면 폭의 절반으로 쪼그라들어
-  콜라주의 목적(사진이 주인공)을 잃는다. 장면 = 헤더 아래 중앙의 세로 컬럼 하나(컨테이너 폭 가득),
-  다음 장면이 아래에서 올라오고 앞 장면은 빠지는 크로스페이드 — 비율이 제각각이라 겹쳐 덮으면
-  앞 장면이 삐져나온다. **장면 분할은 사진 비율이 정한다**: 세로가 긴 1번은 혼자, 가로가 긴 2·3·4는
-  한 화면에 세로로 쌓아 한 번에(가로 사진은 높이가 낮아 세 장이 한 화면에 들어간다).
-  스크럽 길이는 500vh(데스크톱 400vh) — 장면이 커진 만큼 스크롤 민감도를 낮춰 천천히 밟는다.
-  타일 라운드는 `{rounded.lg}`(16px) — 화면 폭 카드에서 24px은 곡률이 과하다.
-  히어로 미디어도 이 폭에선 영상 대신 포스터(`<video poster>`가 아닌 포스터 `<img>` — object-fit 보장)가
-  풀스크린 crop-cover로 스크럽을 탄다.
-  reduced-motion은 폭 무관하게 정적 세로 스택(카피 → 포스터 카드 → 사진 4장) — 최종 프레임만 남기면
-  포스터를 아예 못 보기 때문이다(이때만 포스터 카드가 원본 비율로 선다).
-  레이아웃 대수·구간 수치는 스펙(docs/superpowers/specs/2026-07-13-collage-column-grid-design.md)이 단일 진실.
+- **`collage-story`** (홈 "이렇게 모이고, 나눕니다", 히어로 바로 다음): 전체 화면 사진 장면 섹션. 이전 `media-collage`(히어로 끝에서 영상이
+  사진 4장 격자로 흩어지던 스크럽)를 대체한다 — 히어로는 십자가 → 카피 → 포스터까지만 하고 포스터째 위로 빠진다(#157).
+  히어로와 같은 뼈대: 섹션을 화면에 고정(sticky, 헤더 아래 `100dvh - {spacing.nav}`)하고 스크롤 진행도로 스크럽한다(섹션 길이 = 장면 수 × 100vh).
+  사진 한 장이 화면 전체이고, 스크롤하면 다음 사진이 **제자리에서 페이드**로 얹힌다 — 모양·크기·위치는 움직이지 않는다(어지럽지 않게, 십자가 재사용 없음).
+  좌상단 서브타이틀 + 제목(h2) 한 줄 `{typography.title-md}` on-dark / on-dark-soft, 좌하단 장면 글 = 번호 `{typography.datetime}` `{colors.primary-on-dark}` +
+  제목 `{typography.display-lg}`(h3) on-dark + 설명 `{typography.body-lg}` on-dark-soft. 글은 사진이 바뀌기 전에 꺼지고 바뀐 뒤에 켜진다(두 글이 겹쳐 보이지 않게).
+  사진 위아래에 `{colors.surface-dark}` `color-mix` 스크림. 진행 막대·자동 넘김 없음(스크롤만).
+  **풀블리드 예외**: 사진이 주인공이라 컨테이너 여백을 벗어나 화면 전체를 쓴다(글만 컨테이너 정렬). 세로 화면은 사진을 자르지 않고 원본 비율로 세운 뒤 같은 사진을 흐리게 깐다.
+  연출은 JS 장착(`data-armed`) 뒤에만 건다 — SSR·JS 실패·reduced-motion은 `{colors.surface-dark}` 밴드에 사진 카드(3:2, `{rounded.xl}`) + 글을 세로로 쌓은 정적 목록.
+  스크롤 처리는 rAF로 모으고 DOM 쓰기만(리렌더 없음). 장면 데이터는 `COLLAGE_TILES`(src·title·desc).
 - **`reading-spotlight`**: 목회자 인사말(`/about/pastor`) 본문의 리딩 강조. 본문을 **문장 span으로 쪼개** 스크롤에
   따라 **한 문장씩** 켠다 — 켜진 문장만 `{colors.ink}` + `{typography.body-xl}`(32px/600)로 부풀고, 나머지는
   `{typography.body-lg}`(24px/400) + `{colors.muted-soft}`로 흐리다(형광펜 배경 없음 — 단일 액센트·문서 톤 유지).
@@ -546,10 +540,19 @@ portal로 뜨는 동작 컴포넌트(Modal·Sheet·Popover·Select·Dropdown·To
   지우지 않는다**(고령 가독성 > 몰입). 켜짐은 `animation-fill-mode: none` + **인덱스 등분** `animation-range`(고정·비고정
   공통)로 성립 — 구간이 배타적이라 겹침이 원천 차단된다. 미지원 브라우저·reduced-motion은 평문(`{colors.body}`)·고정 없음.
   대수·노브는 스펙(docs/superpowers/specs/2026-07-13-pastor-reading-spotlight-design.md).
-- **`history-band`**: 연혁 카드 시퀀스(참조: 우리은행 Dream). 연도 배지 + 헤드라인 + 설명의
-  풀폭 라운드 밴드(`{rounded.xl}`)가 세로로 이어지고, 배경은 surface-dark·primary-soft·
-  surface-soft 토큰 교차(브랜드 3색 직역 금지 — 단일 액센트 원칙). 뷰포트 진입 시 1회
-  fade+slide-up(Reveal, 스태거 120ms).
+- **`pastor-closing`**: 목회자 인사말 맺음말(본문 바로 아래). 본문과 같은 흰 캔버스에서 1px `{colors.hairline}` 하나로만 끊고
+  인용문 `{typography.display-lg}` `{colors.ink}` + 우측 정렬 서명(직분 `{typography.body-sm}` `{colors.muted}` + 이름 `{typography.display-sm}`)을 둔다.
+  본문과 같은 4:8 그리드의 오른쪽 칸에 선다(좁은 폭은 한 칸). 카드·다크 밴드·인용 글리프·배지를 쓰지 않는다 — 인사말이 편지라 끝도 편지처럼.
+- **`pastor-dossier`**: 인사말 하단 회색 밴드. 좌 학력 및 경력 : 우 목회 철학 = 5:7(<64rem 세로 쌓기). 둘 다 제목 `{typography.title-md}` +
+  2px `{colors.ink}` 하단 룰 아래 1px 헤어라인 줄 목록(`month-list-row` 결). 약력 행 `{typography.body-md}`, 철학 행 = 번호(`01`~) `{typography.datetime}` muted +
+  문구 `{typography.title-md}` + lucide 아이콘(24px, `{colors.muted}`). 카드 그리드를 쓰지 않는다(한 줄 항목에 틀이 과하다).
+- **`history-timeline`** (홈 연혁, 구 `history-band` 색 카드 시퀀스를 대체): 서브타이틀 "연혁" `{typography.title-md}` primary +
+  헤드라인 `{typography.display-lg}`(h2) 아래 `<ol>` 타임라인. 항목 = 큰 연도 `{typography.display-xl}`(tnum, aria-hidden) + 연월 `{typography.datetime}` muted +
+  제목 `{typography.display-sm}`(h3) + 설명 `{typography.body-md}` + 연혁 사진(`HistoryMedia`, 16:10 `{rounded.xl}`).
+  ≥48rem 가운데 세로선(2px hairline) 양옆으로 글·사진이 번갈아(DOM 순서는 글 → 사진), 그 미만은 선이 왼쪽으로 붙고 세로로 쌓는다.
+  **스크롤 연출**: 선이 뷰포트 60% 높이까지 `{colors.primary}`로 채워지고(transform scaleY), 선이 점에 닿은 항목이 켜진다
+  (점 primary 채움·연도 primary·글 불투명·사진 떠오름) — 한 번 켜지면 유지. 켜지기 전 글은 opacity .35(지우지 않는다).
+  연출은 JS 장착(`data-armed`) 뒤에만 건다 — SSR·JS 실패·reduced-motion은 처음부터 전부 보인다. 스크롤 처리는 rAF로 모으고 DOM 쓰기만(리렌더 없음).
 - **`history-editorial-grid`**: 연혁 페이지(`/about/history`) 챕터 그리드(참조: 카카오 지속가능성).
   챕터 = 외곽 `{rounded.xl}` + 1px `{colors.hairline}`, 내부 셀 구분선은 "컨테이너 배경+gap 1px" 트릭.
   대형 챕터 번호(`{typography.display-xl}`·aria-hidden) + 연도(`{typography.datetime}` primary) + 제목 +
@@ -557,8 +560,12 @@ portal로 뜨는 동작 컴포넌트(Modal·Sheet·Popover·Select·Dropdown·To
   `{colors.surface-dark}` 다크 밴드(내부 구분선은 on-dark·surface-dark `color-mix` 혼합). 도트 픽셀 장식·기타 스크롤
   연출은 채택하지 않음(단일 액센트·절제). 등장은 `Reveal` 재사용 + 사진 셀만 등장 신호(`data-revealed`)와
   동기된 방향성 `clip-path` 와이프(우측 사진 좌→우·미러 우→좌·모바일 일괄 좌→우, reduced-motion 정적). 모바일은 세로 스택.
-- **`ministry-cards`**: 사역 카드 3-up(모바일 1-up). lucide 아이콘(32·currentColor) + 제목 +
-  설명, 배경 토큰 교차는 history-band와 시작점을 달리한다. 동일한 Reveal 등장.
+- **`ministry-cards`** (홈 "우리의 사역" 사진 패널): 사역마다 사진 패널(`{rounded.xl}`, `MINISTRIES.image` — 부서 사진 재사용) +
+  하단 스크림(surface-dark `color-mix`) 위 on-dark lucide 아이콘(32) + 제목 `{typography.title-lg}`. **한 번에 하나만 펼친다**:
+  펼친 패널에만 설명 `{typography.body-md}` on-dark-soft + 링크(`{typography.button}` + `ArrowRight`, 48px).
+  ≥48rem 가로 나란히(높이 30rem, 펼친 패널 flex-grow 2.6), 그 미만 세로로 쌓고 펼친 패널만 키를 키운다(8.5rem → 24rem).
+  아이콘은 제목 위(접힌 좁은 패널에서도 줄지 않고, 긴 제목은 두 줄). **터치 우선**: 펼침은 누름(제목 버튼 누름 영역 = 패널 전체), 마우스 포인터일 때만 올리기로도 펼친다. 접힌 패널의 설명·링크는 `inert`.
+  reduced-motion은 전환 없이 즉시 바뀐다.
 - **`dept-hero`**: 부서 상세 히어로(가이드 14B). 미디어 카드가 스크롤에 따라 `clip-path`로 풀스크린
   확장(width/height 애니메이션 금지), placeholder 측정으로 시작 inset 산출. 확장 종료(0.55) 후
   카피 페이드인(0.60~, 겹침 0.05 유지). reduced-motion은 정적 70vh. 검증 코드라 내부 수치(px·rgba·#fff)는
@@ -568,9 +575,9 @@ portal로 뜨는 동작 컴포넌트(Modal·Sheet·Popover·Select·Dropdown·To
   썸네일 1.03 줌) 재사용. `/departments/{slug}`로 링크, 목록 카드 이미지 = 상세 히어로 이미지(목록↔상세 시각 연속성).
 - **`church-photos`**: 교회사진(`/about/photos`) 공개 페이지. 카테고리 토글(`Tabs` 재사용, 교회 내부/외부)로 사진 그리드를 통째 교체, 썸네일 클릭 시 `Dialog` 확대 모달(좌우 이동·키보드, 이동은 활성 그룹 내부). 콘텐츠는 `CHURCH_PHOTOS` 상수(`public/photos/**` 정적 에셋) 주입, 갤러리 미재사용(자체 컴포넌트)·`<img>` 프레젠테이션 셸. 정적 생성(API 호출 0).
 - **`ministry-showcase`**: 사역 목록(`/departments`). 카드 그리드 대신 **스크롤 고정 쇼케이스** — 부서별 고해상도 단체 사진이 주인공이다.
-  데스크톱(≥64rem): 좌 7 : 우 5. 왼쪽 사진 무대(`{rounded.xl}`, 높이 `min(72vh, 37.5rem)`)가 sticky로 고정되고, 오른쪽 부서 블록(최소 62vh)을
+  데스크톱(≥64rem): 좌 7 : 우 5. 왼쪽 사진 무대(`{rounded.xl}`, 비율 3:2 — 단체 사진 좌우가 잘리지 않게)가 sticky로 고정되고, 오른쪽 부서 블록(최소 62vh)을
   스크롤하면 뷰포트 가운데 띠를 지나는 부서로 사진이 크로스페이드된다(IntersectionObserver, opacity만). 좌상단에 `n / 전체` 카운터(`{typography.datetime}`).
-  부서 블록 = 부서명 `{typography.caption-strong}` `{colors.primary}` + 대표 문구 `{typography.display-md}`(h2) + 한 줄 소개 `{typography.body-md}` +
+  부서 블록 = 부서명 `{typography.caption}` `{colors.primary}` + 대표 문구 `{typography.display-md}`(h2) + 한 줄 소개 `{typography.body-md}` +
   모임 시간 `{typography.datetime}` `{colors.muted}` + "자세히 보기" 텍스트 링크(48px). 지나간·다가올 블록은 흐리게(opacity .55) — 지우지 않는다(고령 가독).
   **<64rem은 고정하지 않는다**: 부서마다 사진(16:10, `{rounded.xl}`) + 글을 세로로 쌓고 흐림도 없다(사진이 화면 폭의 절반으로 쪼그라드는 2컬럼 금지).
   reduced-motion은 전환 없이 즉시 교체. JS가 없어도 모든 글과 링크는 읽힌다(첫 부서 사진 고정). 데이터는 `DEPARTMENTS`의 `caption`·`summary`·`when`.
@@ -701,7 +708,7 @@ portal로 뜨는 동작 컴포넌트(Modal·Sheet·Popover·Select·Dropdown·To
 | Mobile | < 640px | 히어로 h1 72→36px, 카드 1-up, 네비 햄버거, 섹션 패딩 64px |
 | Tablet | 640–1024px | 히어로 h1 56px, 카드 2-up |
 | Desktop | 1024–1280px | 히어로 h1 72px, 카드 3-up |
-| Wide | > 1280px | 콘텐츠 1200px 캡, 히어로 미디어만 풀블리드 |
+| Wide | > 1280px | 콘텐츠 1200px 캡, 히어로 미디어(+ 홈 `collage-story` 사진 무대)만 풀블리드 |
 
 - 터치 타깃: 기본 CTA 48px, 히어로 CTA 56px (WCAG AAA 이상 — 고령 사용자 여유 확보).
 - 네비는 768px 미만에서 햄버거 시트로 전환, 핵심 CTA는 유지.

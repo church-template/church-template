@@ -11,18 +11,16 @@ vi.mock("next/link", () => ({
   ),
 }));
 
-import { HeroHeaderSync } from "./HeroHeaderSync";
+// 헤더 전환 시점은 HeroReveal이 스크롤로 판정해 onSolid로 알린다 — 여기선 그 배선만 본다(콜백 캡처 후 수동 발화).
+let onSolid: ((solid: boolean) => void) | undefined;
+vi.mock("@/hero/HeroReveal", () => ({
+  default: (props: { onSolid?: (solid: boolean) => void }) => {
+    onSolid = props.onSolid;
+    return <section data-testid="hero" />;
+  },
+}));
 
-// jsdom에는 IntersectionObserver가 없다 — 콜백을 캡처해 교차 상태를 수동 발화.
-let ioCallback: IntersectionObserverCallback;
-class MockIO {
-  constructor(cb: IntersectionObserverCallback) {
-    ioCallback = cb;
-  }
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-}
+import { HeroHeaderSync } from "./HeroHeaderSync";
 
 function setup(reduced = false) {
   vi.stubGlobal(
@@ -33,19 +31,8 @@ function setup(reduced = false) {
       removeEventListener: () => {},
     })),
   );
-  vi.stubGlobal("IntersectionObserver", MockIO);
   render(
-    <HeroHeaderSync
-      media={{ type: "image", src: "/bg.jpg" }}
-      caption="카피"
-      tiles={[
-        { src: "/t1.jpg", alt: "", aspect: 1.17 },
-        { src: "/t2.jpg", alt: "", aspect: 1.78 },
-        { src: "/t3.jpg", alt: "", aspect: 1.5 },
-        { src: "/t4.jpg", alt: "", aspect: 1.78 },
-      ]}
-      posterAspect={1.32}
-    >
+    <HeroHeaderSync media={{ type: "image", src: "/bg.jpg" }} caption="카피" posterAspect={1.32}>
       <p>본문</p>
     </HeroHeaderSync>,
   );
@@ -53,6 +40,7 @@ function setup(reduced = false) {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  onSolid = undefined;
 });
 
 describe("HeroHeaderSync", () => {
@@ -63,12 +51,7 @@ describe("HeroHeaderSync", () => {
 
   it("히어로 이탈 시 solid(라이트 스킨)로 전환한다", () => {
     setup();
-    act(() => {
-      ioCallback(
-        [{ isIntersecting: false } as IntersectionObserverEntry],
-        {} as IntersectionObserver,
-      );
-    });
+    act(() => onSolid?.(true));
     expect(screen.getByRole("banner").className).toContain("bg-canvas");
   });
 
@@ -80,18 +63,8 @@ describe("HeroHeaderSync", () => {
 
   it("히어로로 복귀 시 on-dark로 되돌아간다", () => {
     setup();
-    act(() => {
-      ioCallback(
-        [{ isIntersecting: false } as IntersectionObserverEntry],
-        {} as IntersectionObserver,
-      );
-    });
-    act(() => {
-      ioCallback(
-        [{ isIntersecting: true } as IntersectionObserverEntry],
-        {} as IntersectionObserver,
-      );
-    });
+    act(() => onSolid?.(true));
+    act(() => onSolid?.(false));
     expect(screen.getByRole("banner").className).toContain("bg-transparent");
   });
 

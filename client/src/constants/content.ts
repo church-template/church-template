@@ -81,12 +81,14 @@ export interface HistoryItem {
 export interface HistoryContent {
   title: string;
   intro: string; // 인트로 한 줄(placeholder 카피 — 후일 수정)
+  headline: string; // 홈 연혁 타임라인 섹션 헤드라인
   items: HistoryItem[];
 }
 
 export const HISTORY = {
   title: "연혁",
   intro: "작은 가정 예배에서 시작된 예시교회의 발자취입니다.",
+  headline: "작은 가정 예배에서 지금까지",
   items: [
     {
       id: "2011-04",
@@ -331,6 +333,12 @@ export const WORSHIP = {
   // 히어로 사진 — 교회별로 주일예배 사진(public/ 정적 에셋)으로 교체한다. 템플릿은 예시 이미지.
   hero: { src: "/dept/praise/1.webp", alt: "본당에서 드리는 예배" },
   nextLabel: "다음 예배",
+  // 홈 예배 섹션의 요일 칩 — 누른 요일에 드리는 예배만 켠다.
+  dayFilterLabel: "요일별 예배 보기",
+  dayAll: "전체",
+  dayToday: "오늘",
+  dayShort: ["주일", "월", "화", "수", "목", "금", "토"], // 0=주일 … 6=토
+
   // 처음 오는 분을 위한 주일 아침 흐름 — 기존 "예배 참석 안내" 세 줄을 시간순으로 옮긴 것(같은 사실).
   flowEyebrow: "처음 오시는 분께",
   flowHeading: "주일 아침은 이렇게 흘러갑니다",
@@ -459,35 +467,57 @@ export const CTA_BAND = {
 
 // 메인 사역 카드(스펙 2026-06-12 H4·H5) — VISION.points의 3축을 카드로 승격.
 // 아이콘은 직렬화 가능한 키만 — lucide 컴포넌트 매핑은 MinistryCards가 담당.
+// 홈 히어로 바로 아래 장면 섹션(collage-story) — 사진 장면 목록은 church.ts COLLAGE_TILES
+export const COLLAGE_SECTION = { eyebrow: "예시교회 이야기", title: "이렇게 모이고, 나눕니다" };
+
 export const MINISTRY = { title: "우리의 사역" };
 export interface Ministry {
   key: "worship" | "nextgen" | "serving";
   title: string;
   desc: string;
+  image: string; // 홈 사진 패널 배경 — 부서 히어로 사진(public/dept) 재사용
+  href: string; // 패널을 펼치면 나오는 링크
+  cta: string;
 }
 export const MINISTRIES: Ministry[] = [
   {
     key: "worship",
     title: "말씀 중심의 예배",
     desc: "주일과 평일, 삶의 자리마다 말씀으로 예배합니다.",
+    image: "/dept/praise.webp",
+    href: "/worship",
+    cta: "예배 안내 보기",
   },
   {
     key: "nextgen",
     title: "다음 세대 양육",
     desc: "영유아부터 청년까지 세대별 교육으로 신앙을 세웁니다.",
+    image: "/dept/student.webp",
+    href: "/departments",
+    cta: "사역 부서 보기",
   },
   {
     key: "serving",
     title: "지역 사회 섬김",
     desc: "지역과 이웃의 필요에 응답하는 섬김을 실천합니다.",
+    image: "/dept/women.webp",
+    href: "/about",
+    cta: "교회 소개 보기",
   },
 ];
 
 // 메인 데이터 섹션 타이틀·빈 상태 문구(가이드 13.2 빈 배열 처리) — 콘텐츠 하드코딩 금지(12장).
 export const MAIN_SECTIONS = {
-  sermons: { title: "최신 설교", empty: "등록된 설교가 없습니다" },
-  notices: { title: "공지", empty: "등록된 공지가 없습니다" },
-  events: { title: "다가오는 일정", empty: "등록된 일정이 없습니다" },
+  sermons: {
+    title: "최신 설교",
+    empty: "등록된 설교가 없습니다",
+    pastTitle: "지난 말씀", // 말씀 띠 아래 나머지 설교 줄 목록 제목
+    more: "설교 전체 보기",
+  },
+  // 공지·일정은 홈에서 "교회 소식" 탭 하나로 묶는다 — title은 탭 이름으로 쓴다.
+  news: { title: "교회 소식" },
+  notices: { title: "공지", empty: "등록된 공지가 없습니다", more: "공지 전체 보기" },
+  events: { title: "다가오는 일정", empty: "등록된 일정이 없습니다", more: "일정 전체 보기" },
   // 소식 섹션(설교·공지·일정)만 불러오기 실패했을 때 그 자리에 표시하는 문구. 페이지 나머지는 정상.
   error: "지금은 교회 소식을 불러올 수 없어요. 잠시 후 다시 시도해 주세요.",
 } as const;

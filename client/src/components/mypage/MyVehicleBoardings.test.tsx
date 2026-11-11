@@ -17,7 +17,7 @@ import { MyVehicleBoardings } from "./MyVehicleBoardings";
 import type { VehicleRunCardResponse } from "@/lib/api/types";
 
 const page = (content: VehicleRunCardResponse[]) => ({ content, page: { size: 10, number: 0, totalElements: content.length, totalPages: 1 } });
-const applied: VehicleRunCardResponse = { id: 6, departsAt: "2026-08-02T07:30:00", myRequest: { pickupLocation: "교회 정문" } };
+const applied: VehicleRunCardResponse = { id: 6, departsAt: "2026-08-02T07:30:00", myRequest: { pickupLocation: "태산아파트 정문" } };
 const unapplied: VehicleRunCardResponse = { id: 7, departsAt: "2026-08-09T07:30:00", myRequest: null };
 
 let qc: QueryClient;
@@ -34,7 +34,7 @@ describe("MyVehicleBoardings", () => {
   it("다가오는 내 신청 행: 출발 시각·픽업·목록 링크", async () => {
     fetchMock.mockResolvedValue(page([applied]));
     renderIt();
-    expect(await screen.findByText("픽업: 교회 정문")).toBeDefined();
+    expect(await screen.findByText("픽업: 태산아파트 정문")).toBeDefined();
     expect(screen.getByRole("link", { name: /출발/ }).getAttribute("href")).toBe("/vehicle-runs");
   });
 

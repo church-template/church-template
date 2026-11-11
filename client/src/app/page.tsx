@@ -3,19 +3,18 @@ import { connection } from "next/server";
 import { HeroHeaderSync } from "@/components/main/HeroHeaderSync";
 import { WorshipSection } from "@/components/main/WorshipSection";
 import { SermonSection } from "@/components/main/SermonSection";
-import { NoticeSection } from "@/components/main/NoticeSection";
-import { EventSection } from "@/components/main/EventSection";
+import { NewsSection } from "@/components/main/NewsSection";
 import { MainFeedsError } from "@/components/main/MainFeedsError";
 import { CtaBand } from "@/components/shell/CtaBand";
 import { SiteFooter } from "@/components/shell/SiteFooter";
 import { getMain } from "@/lib/api/main";
 import { HistoryBand } from "@/components/main/HistoryBand";
 import { MinistryCards } from "@/components/main/MinistryCards";
+import { CollageStory } from "@/components/main/CollageStory";
 import {
   HERO,
   HERO_CAPTION,
   HERO_POSTER_ASPECT,
-  COLLAGE_TILES,
 } from "@/constants/church";
 
 // 홈 정본 URL — 루트 layout에 canonical을 두면 전 페이지가 홈을 정본으로 가리키는 버그라
@@ -45,18 +44,17 @@ export default async function Home() {
       <HeroHeaderSync
         media={HERO}
         caption={caption}
-        tiles={COLLAGE_TILES}
         posterAspect={HERO_POSTER_ASPECT}
       >
+        <CollageStory />
         <HistoryBand />
         <MinistryCards />
         <WorshipSection />
         {/* 소식(설교·공지·일정)만 장애 격리 — 로드 실패 시 이 자리에만 폴백 */}
         {main ? (
           <>
-            <SermonSection sermons={main.sermons} />
-            <NoticeSection notices={main.notices} />
-            <EventSection events={main.upcomingEvents} />
+            <SermonSection sermons={main.sermons} now={new Date()} />
+            <NewsSection notices={main.notices} events={main.upcomingEvents} />
           </>
         ) : (
           <MainFeedsError />
