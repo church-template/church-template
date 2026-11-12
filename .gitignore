@@ -20,3 +20,6 @@ docs/superpowers/
 
 # archify 작업·검증 산출물(최종 다이어그램은 docs/diagrams/)
 .archify/
+
+# Playwright MCP 확인용 스냅샷·스크린샷
+.playwright-mcp/
