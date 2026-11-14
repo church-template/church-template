@@ -1,15 +1,41 @@
 {
   "metadata": {
-    "lastUpdated": "2026-11-10T14:23:14Z",
-    "currentVersion": "0.2.0",
+    "lastUpdated": "2026-11-14T14:23:50Z",
+    "currentVersion": "0.4.0",
     "projectType": "spring",
     "projectTypes": [
       "spring",
       "react"
     ],
-    "totalReleases": 3
+    "totalReleases": 4
   },
   "releases": [
+    {
+      "version": "0.4.0",
+      "project_type": "spring",
+      "project_types": [
+        "spring",
+        "react"
+      ],
+      "date": "2026-11-14",
+      "pr_number": 18,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **새 기능**\n  * 마이페이지 관리 화면을 왼쪽 메뉴·관리 찾기 구성으로 개편\n\n* **기타**\n  * Playwright MCP 산출물 폴더를 gitignore에 추가",
+      "parsed_changes": {
+        "새_기능": {
+          "title": "새 기능",
+          "items": [
+            "마이페이지 관리 화면을 왼쪽 메뉴·관리 찾기 구성으로 개편"
+          ]
+        },
+        "기타": {
+          "title": "기타",
+          "items": [
+            "Playwright MCP 산출물 폴더를 gitignore에 추가"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "0.2.0",
       "project_type": "spring",
