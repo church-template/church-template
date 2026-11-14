@@ -1,9 +1,0 @@
-.git
-.gradle
-build
-.issues
-.env
-.idea
-.vscode
-docs
-*.md

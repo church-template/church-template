@@ -2,7 +2,7 @@
 
 <h1>교회 홈페이지 템플릿 — client</h1>
 
-교회 홈페이지 템플릿 모노레포의 프론트엔드(`client/`) · 백엔드는 [`../server`](../server) · 전체 안내는 [루트 README](../README.md)
+교회 홈페이지 템플릿 모노레포의 프론트엔드(`client/`) · 백엔드는 공용 서버 [church-backend](https://github.com/church-template/church-backend) · 전체 안내는 [루트 README](../README.md)
 
 ![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
