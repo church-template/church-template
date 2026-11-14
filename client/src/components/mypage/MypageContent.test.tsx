@@ -11,7 +11,10 @@ const { signOutMock, replace, useMeMock, refetch } = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/auth/authApi", () => ({ signOut: signOutMock }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace, push: vi.fn() }) }));
-vi.mock("@/lib/auth/useMe", () => ({ useMe: useMeMock }));
+vi.mock("@/lib/auth/useMe", () => ({ useMe: useMeMock, useHasPermission: () => false }));
+// 내 활동 노출 판정용 쿼리 — 권한 false라 호출되지 않지만 모듈 의존(authFetch)을 끊는다.
+vi.mock("@/components/challenges/queries", () => ({ useMyParticipations: () => ({ data: undefined }) }));
+vi.mock("@/components/vehicles/queries", () => ({ useVehicleRuns: () => ({ data: undefined }) }));
 // 오케스트레이션에 집중 — 무거운 자식은 자리표시로 대체.
 vi.mock("./ProfileCard", () => ({ ProfileCard: () => <div>ProfileCard</div> }));
 vi.mock("./PasswordChangeSection", () => ({ PasswordChangeSection: () => <div>PasswordChangeSection</div> }));
@@ -66,6 +69,28 @@ describe("MypageContent", () => {
     expect(screen.getByText("AgreementStatus")).toBeDefined();
     expect(screen.getByText("WithdrawDialog")).toBeDefined();
     expect(screen.getByRole("button", { name: "로그아웃" })).toBeDefined();
+  });
+
+  it("바로가기 메뉴에 보이는 섹션만 싣는다(관리 권한 없으면 관리 항목 없음)", () => {
+    renderContent();
+    const nav = screen.getByRole("navigation", { name: "마이페이지 메뉴" });
+    expect(nav.querySelector('a[href="#mypage-profile"]')).not.toBeNull();
+    expect(nav.querySelector('a[href="#mypage-account"]')).not.toBeNull();
+    expect(nav.querySelector('a[href="#mypage-manage"]')).toBeNull();
+    expect(nav.querySelector('a[href="#mypage-activity"]')).toBeNull();
+    // 메뉴가 가리키는 섹션이 실제로 있다
+    expect(document.getElementById("mypage-profile")).not.toBeNull();
+    expect(document.getElementById("mypage-account")).not.toBeNull();
+  });
+
+  it("관리 권한이 있으면 관리 찾기와 보유 분류만 메뉴에 싣는다", () => {
+    useMeMock.mockReturnValue({ data: { ...me, permissions: ["SERMON_WRITE"] }, isPending: false, isError: false, refetch });
+    renderContent();
+    const nav = screen.getByRole("navigation", { name: "마이페이지 메뉴" });
+    expect(nav.querySelector('a[href="#mypage-manage"]')).not.toBeNull();
+    expect(nav.querySelector('a[href="#mypage-manage-content"]')).not.toBeNull();
+    expect(nav.querySelector('a[href="#mypage-manage-governance"]')).toBeNull();
+    expect(document.getElementById("mypage-manage-content")).not.toBeNull();
   });
 
   it("에러 시 다시 시도 버튼으로 refetch한다", () => {
