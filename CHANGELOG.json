@@ -1,15 +1,33 @@
 {
   "metadata": {
-    "lastUpdated": "2026-11-14T14:23:50Z",
-    "currentVersion": "0.4.0",
-    "projectType": "spring",
+    "lastUpdated": "2026-11-14T16:10:01Z",
+    "currentVersion": "0.4.1",
+    "projectType": "react",
     "projectTypes": [
-      "spring",
       "react"
     ],
-    "totalReleases": 4
+    "totalReleases": 5
   },
   "releases": [
+    {
+      "version": "0.4.1",
+      "project_type": "react",
+      "project_types": [
+        "react"
+      ],
+      "date": "2026-11-14",
+      "pr_number": 21,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **기타**\n  * 공용 백엔드 전환에 따라 server 폴더와 서버 워크플로 제거",
+      "parsed_changes": {
+        "기타": {
+          "title": "기타",
+          "items": [
+            "공용 백엔드 전환에 따라 server 폴더와 서버 워크플로 제거"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "0.4.0",
       "project_type": "spring",
