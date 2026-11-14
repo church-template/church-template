@@ -8,7 +8,11 @@ import { typo } from "@/constants/typography";
 import { notify } from "@/lib/notify";
 import { signOut } from "@/lib/auth/authApi";
 import { useAuthStore } from "@/lib/auth/authStore";
-import { useMe } from "@/lib/auth/useMe";
+import { useMe, useHasPermission } from "@/lib/auth/useMe";
+import { Activity, Search, Settings, User } from "lucide-react";
+import { visibleManageGroups } from "@/lib/admin/manageDomains";
+import { useMyParticipations } from "@/components/challenges/queries";
+import { useVehicleRuns } from "@/components/vehicles/queries";
 import { ApiError } from "@/lib/auth/apiError";
 import { Container } from "@/components/shell/Container";
 import { Button } from "@/components/ui/Button";
@@ -18,9 +22,14 @@ import { ProfileCard } from "./ProfileCard";
 import { PasswordChangeSection } from "./PasswordChangeSection";
 import { AgreementStatus } from "./AgreementStatus";
 import { WithdrawDialog } from "./WithdrawDialog";
-import { ManageHub } from "./ManageHub";
+import { ManageHub, MANAGE_SECTION_ID, manageCategoryId } from "./ManageHub";
 import { MyChallengeHistory } from "./MyChallengeHistory";
 import { MyVehicleBoardings } from "./MyVehicleBoardings";
+import { MypageNav, type MypageNavItem } from "./MypageNav";
+
+const PROFILE_ID = "mypage-profile";
+const ACTIVITY_ID = "mypage-activity";
+const ACCOUNT_ID = "mypage-account";
 
 export function MypageContent() {
   const router = useRouter();
@@ -58,10 +67,37 @@ export function MypageContent() {
     router.replace("/");
   };
 
+  // 내 활동·관리는 권한·데이터가 있을 때만 보인다 — 메뉴에도 보이는 섹션만 싣는다.
+  // 자식 컴포넌트와 같은 쿼리키라 요청은 한 번만 나간다(TanStack 캐시 공유).
+  const canChallenge = useHasPermission("CHALLENGE_PARTICIPATE");
+  const canVehicle = useHasPermission("VEHICLE_APPLY");
+  const parts = useMyParticipations(0, canChallenge);
+  const runs = useVehicleRuns(0, canVehicle);
+  const hasActivity =
+    (canChallenge && (parts.data?.content.length ?? 0) > 0) ||
+    (canVehicle && (runs.data?.content.some((r) => r.myRequest != null) ?? false));
+  const manageGroups = visibleManageGroups(me);
+
+  const navItems: MypageNavItem[] = [
+    { id: PROFILE_ID, label: "내 정보", Icon: User },
+    ...(hasActivity ? [{ id: ACTIVITY_ID, label: "내 활동", Icon: Activity }] : []),
+    ...(manageGroups.length > 0
+      ? [
+          { id: MANAGE_SECTION_ID, label: "관리 찾기", Icon: Search },
+          ...manageGroups.map((g, i) => ({
+            id: manageCategoryId(g.cat.key),
+            label: g.cat.label,
+            Icon: g.cat.Icon,
+            heading: i === 0 ? "관리 분류" : undefined,
+          })),
+        ]
+      : []),
+    { id: ACCOUNT_ID, label: "계정", Icon: Settings },
+  ];
+
   return (
     <Container as="section" className="py-section">
-      {/* 계정 페이지는 1200px 전폭이 아닌 좁은 읽기 컬럼으로 — 카드가 휑하게 비지 않도록(DESIGN 호흡) */}
-      <div className="mx-auto w-full max-w-[var(--container-narrow)]">
+      <div className="w-full">
         <h1 className={cn(typo.displayMd, "text-ink")}>마이페이지</h1>
 
         {isPending ? (
@@ -80,25 +116,37 @@ export function MypageContent() {
             </div>
           </div>
         ) : (
-          <div className="mt-xl flex flex-col gap-lg">
-            <Reveal><ProfileCard me={me} /></Reveal>
-            {/* 비밀번호·약관을 한 '계정' 카드로 묶어 산만함 제거 */}
-            <Reveal delay={120}>
-              <section className="flex flex-col gap-lg rounded-xl border border-hairline bg-surface-card p-xl">
-                <PasswordChangeSection />
-                <AgreementStatus me={me} />
-              </section>
-            </Reveal>
-            <MyChallengeHistory delay={150} />
-            <MyVehicleBoardings delay={165} />
-            <ManageHub delay={180} />
-            <Reveal delay={240}>
-              <div className="flex items-center justify-between gap-md pt-sm">
-                <WithdrawDialog />
-                {/* 로그아웃은 파괴적 액션이 아니므로 secondary 사용 */}
-                <Button variant="secondary" loading={loggingOut} onClick={onLogout}>로그아웃</Button>
+          // 좌 메뉴 3 : 우 본문 9(<64rem은 한 칸 + 상단 칩). 긴 관리 목록에서도 지금 위치를 알고 바로 건너뛰게(#169).
+          <div className="lg:mt-xl lg:grid lg:grid-cols-12 lg:gap-xxl">
+            <MypageNav items={navItems} />
+            <div className="mt-xl flex min-w-0 flex-col gap-xxl lg:col-span-9 lg:mt-0">
+              <div id={PROFILE_ID} className="scroll-mt-section">
+                <Reveal><ProfileCard me={me} /></Reveal>
               </div>
-            </Reveal>
+              {hasActivity ? (
+                <section id={ACTIVITY_ID} className="scroll-mt-section">
+                  <h2 className={cn(typo.titleLg, "text-ink")}>내 활동</h2>
+                  <div className="mt-md grid grid-cols-1 gap-lg xl:grid-cols-2">
+                    <MyChallengeHistory delay={120} />
+                    <MyVehicleBoardings delay={150} />
+                  </div>
+                </section>
+              ) : null}
+              <ManageHub />
+              <section id={ACCOUNT_ID} className="scroll-mt-section">
+                <h2 className={cn(typo.titleLg, "text-ink")}>계정</h2>
+                {/* 비밀번호·약관을 한 '계정' 카드로 묶어 산만함 제거 */}
+                <div className="mt-md flex flex-col gap-lg rounded-xl border border-hairline bg-surface-card p-xl">
+                  <PasswordChangeSection />
+                  <AgreementStatus me={me} />
+                </div>
+                <div className="mt-lg flex items-center justify-between gap-md">
+                  <WithdrawDialog />
+                  {/* 로그아웃은 파괴적 액션이 아니므로 secondary 사용 */}
+                  <Button variant="secondary" loading={loggingOut} onClick={onLogout}>로그아웃</Button>
+                </div>
+              </section>
+            </div>
           </div>
         )}
       </div>

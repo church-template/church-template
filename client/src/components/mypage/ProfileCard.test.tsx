@@ -25,12 +25,11 @@ beforeEach(() => { qc = new QueryClient({ defaultOptions: { queries: { retry: fa
 afterEach(() => vi.clearAllMocks());
 
 describe("ProfileCard", () => {
-  it("이름·전화·직분·권한칩·승인 배지·역할칩을 표시한다", () => {
+  it("이름·전화·직분·승인 배지·역할칩을 표시한다", () => {
     renderCard();
     expect(screen.getByRole("heading", { name: "홍길동" })).toBeDefined();
     expect(screen.getByText("01012345678")).toBeDefined();
     expect(screen.getByText("집사")).toBeDefined();
-    expect(screen.getByText("설교 관리")).toBeDefined();
     expect(screen.getByText("승인")).toBeDefined();
     expect(screen.getByText("MEMBER")).toBeDefined(); // 역할(RBAC) 칩
   });
@@ -40,9 +39,11 @@ describe("ProfileCard", () => {
     expect(screen.getByText("승인 대기")).toBeDefined();
   });
 
-  it("권한이 없으면 이용 권한 섹션을 생략한다", () => {
-    renderCard({ ...base, permissions: [] });
+  // 관리자는 권한 배지 17개가 이름을 덮었다 — 할 수 있는 일은 '관리' 섹션이 보여준다(#169).
+  it("권한이 있어도 이용 권한 배지 목록을 그리지 않는다", () => {
+    renderCard();
     expect(screen.queryByText("이용 권한")).toBeNull();
+    expect(screen.queryByText("설교 관리")).toBeNull();
   });
 
   it("수정 클릭 시 편집 폼으로 전환한다", () => {

@@ -6,7 +6,6 @@ import { typo } from "@/constants/typography";
 import type { MeResponse } from "@/lib/auth/types";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { permissionLabel } from "@/constants/permissions";
 import { ACTION } from "@/constants/actionButton";
 import { ProfileEditForm } from "./ProfileEditForm";
 
@@ -54,17 +53,7 @@ export function ProfileCard({ me }: { me: MeResponse }) {
           {me.position ? <Row label="직분" value={me.position} /> : null}
         </dl>
       )}
-
-      {me.permissions.length > 0 ? (
-        <div className="mt-lg flex flex-col gap-xs">
-          <span className={cn(typo.caption, "text-muted")}>이용 권한</span>
-          <div className="flex flex-wrap gap-xs">
-            {me.permissions.map((p) => (
-              <Badge key={p}>{permissionLabel(p)}</Badge>
-            ))}
-          </div>
-        </div>
-      ) : null}
+      {/* 이용 권한 배지 목록은 두지 않는다 — 관리자는 17개가 이름을 덮었다. 할 수 있는 일은 아래 '관리'가 보여준다(#169). */}
     </section>
   );
 }
