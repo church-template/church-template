@@ -42,9 +42,8 @@
 
 version: "0.4.0"
 version_code: 9 # app build number
-project_types: ["spring","react"]   # 멀티타입 배열 — 첫 항목이 primary, 직접 편집 가능
+project_types: ["react"]   # 멀티타입 배열 — 첫 항목이 primary, 직접 편집 가능
 project_paths:                # 타입별 프로젝트 폴더 (레포 루트 기준 상대경로)
-  spring: "server"   # server/build.gradle
   react: "client"   # client/package.json
 metadata:
   last_updated: "2026-11-14 14:23:49"
@@ -63,7 +62,7 @@ metadata:
       deploy: "none"
       publish: []
       secret_backup: false
-      # 모노레포 미지원(레포 루트 기준) 워크플로 — client/·server/용 CI·배포는 직접 관리(.github/workflows/CLIENT-*·SERVER-*)
+      # 모노레포 미지원(레포 루트 기준) 워크플로 — client/용 배포는 직접 관리(.github/workflows/CLIENT-DEPLOY.yaml) — 백엔드는 church-backend 레포
       excluded_workflows: ["PROJECT-REACT-CI.yaml", "PROJECT-REACT-CICD.yaml"]
       semver_auto: true   # 커밋 제목으로 버전 승격 폭 결정 (false면 항상 patch)
       projects_sync: false   # GitHub Projects 상태 동기화 워크플로우 포함 여부
