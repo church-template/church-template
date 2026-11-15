@@ -76,29 +76,41 @@ export function ChallengeList() {
       {cards.length === 0 ? (
         <EmptyState message="등록된 챌린지가 없습니다." />
       ) : (
-        <div className="grid gap-base sm:grid-cols-2">
-          {cards.map((c) => <ChallengeCard key={c.id} challenge={c} />)}
-        </div>
+        <ul className="mt-lg border-t-2 border-ink">
+          {cards.map((c) => <ChallengeRow key={c.id} challenge={c} />)}
+        </ul>
       )}
       {list.data.page.totalPages > 1 ? <Pagination page={list.data.page} /> : null}
     </div>
   );
 }
 
-function ChallengeCard({ challenge: c }: { challenge: ChallengeCardResponse }) {
+// 줄 목록 행(month-list-row 결) — 기간을 왼쪽 칸에 세로로 세워 비교하기 쉽게, 행 전체가 상세 링크(#178).
+function ChallengeRow({ challenge: c }: { challenge: ChallengeCardResponse }) {
   return (
-    <Link
-      href={`/challenges/${c.id}`}
-      className="rounded-xl border border-hairline p-xl transition-colors hover:border-primary"
-    >
-      <div className="flex items-center gap-sm">
-        <Badge variant={c.status === "ONGOING" ? "primary" : "default"}>{STATUS_LABELS[c.status]}</Badge>
-        <span className={cn(typo.titleMd, "text-ink")}>{c.title}</span>
-      </div>
-      <p className={cn(typo.datetime, "mt-sm text-muted")}>{formatDate(c.startDate)} ~ {formatDate(c.endDate)}</p>
-      <p className={cn(typo.bodySm, "mt-xs text-muted")}>
-        {formatRange(c.startBook, c.endBook)} · {c.totalChapters}장 · 하루 {c.dailyGoal}장
-      </p>
-    </Link>
+    <li className="border-b border-hairline">
+      <Link
+        href={`/challenges/${c.id}`}
+        className={cn(
+          "group grid gap-xxs px-xxs py-md md:grid-cols-4 md:items-baseline md:gap-lg",
+          "rounded-sm focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary",
+        )}
+      >
+        <span className={cn(typo.datetime, "text-muted")}>
+          {formatDate(c.startDate)}
+          <br />~ {formatDate(c.endDate)}
+        </span>
+        <span className="md:col-span-2">
+          <span className="flex flex-wrap items-center gap-xs">
+            <Badge variant={c.status === "ONGOING" ? "primary" : "default"}>{STATUS_LABELS[c.status]}</Badge>
+            <span className={cn(typo.titleMd, "text-ink transition-colors group-hover:text-primary")}>{c.title}</span>
+          </span>
+          <span className={cn(typo.bodySm, "mt-xxs block text-body")}>
+            {formatRange(c.startBook, c.endBook)} · 총 {c.totalChapters}장
+          </span>
+        </span>
+        <span className={cn(typo.bodySm, "text-body md:text-right")}>하루 {c.dailyGoal}장</span>
+      </Link>
+    </li>
   );
 }

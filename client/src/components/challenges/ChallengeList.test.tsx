@@ -76,13 +76,16 @@ describe("ChallengeList — 피처 판별 3케이스(스펙 §3)", () => {
     expect(await screen.findByText("등록된 챌린지가 없습니다.")).toBeDefined();
   });
 
-  it("카드에 상태·기간·범위 표기", async () => {
+  it("줄 목록 행: 상태·기간·범위·하루 분량, 행 전체가 상세 링크(#178)", async () => {
     fetchChallengesMock.mockResolvedValue(page([{ ...card, id: 2, status: "ENDED", title: "지난 통독" }]));
     fetchPartsMock.mockResolvedValue(page([]));
     renderList();
-    expect(await screen.findByText("지난 통독")).toBeDefined();
+    const row = (await screen.findByText("지난 통독")).closest("a")!;
+    expect(row.getAttribute("href")).toBe("/challenges/2");
+    expect(row.closest("li")).not.toBeNull();
     expect(screen.getByText("종료")).toBeDefined();
-    expect(screen.getByText(/마태복음 ~ 요한계시록 · 260장 · 하루 4장/)).toBeDefined();
+    expect(screen.getByText("마태복음 ~ 요한계시록 · 총 260장")).toBeDefined();
+    expect(screen.getByText("하루 4장")).toBeDefined();
   });
 
   it("ENDED 카드만 있고 참여도 없으면 피처 섹션 미노출", async () => {

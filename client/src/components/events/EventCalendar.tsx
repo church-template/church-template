@@ -10,7 +10,6 @@ import { formatEventTime } from "@/lib/date";
 import { EventChip } from "./EventChip";
 import { EventDayPopover } from "./EventDayPopover";
 import { EventDetailModal } from "./EventDetailModal";
-import { EventCard } from "@/components/cards/EventCard";
 import { EmptyState } from "@/components/common/EmptyState";
 import type { EventCardResponse } from "@/lib/api/types";
 
@@ -112,37 +111,56 @@ export function EventCalendar({ model, tagId }: { model: CalendarModel; tagId?: 
         </div>
       </div>
 
-      {/* 모바일 목록 */}
+      {/* 모바일 목록 — 아젠다(#178): 왼쪽 날짜 칸을 닻으로 고정하고 일정은 줄로. 좁은 폭에서 카드 틀이 글자 폭을 깎지 않게. */}
       <div data-testid="calendar-list" className="mt-lg lg:hidden">
         {dayGroups.length === 0 ? (
           <EmptyState message="등록된 일정이 없습니다." />
         ) : (
-          <div className="flex flex-col gap-lg">
-            {dayGroups.map((g) => (
-              <div key={civilKey(g.civil)}>
-                <h3 className={cn(typo.datetime, "text-ink")}>
-                  {`${g.civil.m}월 ${g.civil.d}일 (${WEEKDAYS[g.weekday]})`}
-                </h3>
-                <div className="mt-xs flex flex-col gap-xs">
-                  {g.events.map((e) => {
-                    const time = e.allDay
-                      ? formatAllDayRange(e.startAt, e.endAt ?? null)
-                      : formatEventTime(e.startAt, e.endAt, e.allDay);
-                    return (
-                      <button
-                        key={e.id}
-                        type="button"
-                        onClick={() => setSelected(e)}
-                        className="block w-full text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary rounded-xl"
+          <ul className="border-t-2 border-ink">
+            {dayGroups.map((g) => {
+              const today = isToday(g.civil);
+              return (
+                <li key={civilKey(g.civil)} className="flex gap-base border-b border-hairline py-md">
+                  <h3 className="w-14 shrink-0 text-center">
+                    <span className="sr-only">{`${g.civil.m}월 ${g.civil.d}일 (${WEEKDAYS[g.weekday]})`}</span>
+                    <span aria-hidden="true">
+                      <span
+                        className={cn(
+                          typo.titleLg,
+                          "inline-flex h-11 w-11 items-center justify-center rounded-full tabular-nums",
+                          today ? "bg-primary-soft text-primary" : "text-ink",
+                        )}
                       >
-                        <EventCard title={e.title} time={time} location={e.location} />
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
+                        {g.civil.d}
+                      </span>
+                      <span className={cn(typo.caption, "block text-muted")}>
+                        {today ? "오늘" : WEEKDAYS[g.weekday]}
+                      </span>
+                    </span>
+                  </h3>
+                  <div className="min-w-0 flex-1 divide-y divide-hairline">
+                    {g.events.map((e) => {
+                      const time = e.allDay
+                        ? formatAllDayRange(e.startAt, e.endAt ?? null)
+                        : formatEventTime(e.startAt, e.endAt, e.allDay);
+                      const meta = [time, e.location].filter(Boolean).join(" · ");
+                      return (
+                        <button
+                          key={e.id}
+                          type="button"
+                          onClick={() => setSelected(e)}
+                          className="group block w-full py-xs text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
+                        >
+                          <span className={cn(typo.titleMd, "block text-ink group-hover:text-primary")}>{e.title}</span>
+                          {meta ? <span className={cn(typo.bodySm, "mt-xxs block text-body")}>{meta}</span> : null}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
         )}
       </div>
 
