@@ -65,6 +65,19 @@ describe("EventCalendar", () => {
     expect(screen.getByTestId("modal").getAttribute("data-id")).toBe("9");
   });
 
+  it("모바일 아젠다: 날짜 칸(큰 숫자) + 오늘 표시, 일정은 카드가 아닌 줄(#178)", () => {
+    render(<EventCalendar model={model} tagId={undefined} />);
+    const list = screen.getByTestId("calendar-list");
+    // 오늘(15) — 데스크톱 격자와 같은 primary-soft 동그라미 + "오늘"
+    expect(within(list).getByText("15").className).toContain("bg-primary-soft");
+    expect(within(list).getByText("오늘")).toBeDefined();
+    // 다른 날은 요일
+    expect(within(list).getByText("10").className).not.toContain("bg-primary-soft");
+    expect(within(list).getByText("수")).toBeDefined();
+    // 일정 행에 카드 테두리 없음
+    expect(within(list).getByText("이벤트1").closest("button")!.className).not.toContain("border");
+  });
+
   it("이벤트 없으면 모바일 목록에 EmptyState", () => {
     const empty = buildCalendarModel({ year: 2026, month: 6, today: { y: 2026, m: 6, d: 15 }, events: [] });
     render(<EventCalendar model={empty} tagId={undefined} />);

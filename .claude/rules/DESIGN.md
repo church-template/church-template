@@ -502,6 +502,14 @@ portal로 뜨는 동작 컴포넌트(Modal·Sheet·Popover·Select·Dropdown·To
 - **`schedule-card`**: `{colors.surface-soft}` 배경. 예배명 `{typography.title-md}` +
   시간 `{typography.datetime}` + 장소 `{typography.body-sm}`.
 - **`event-card`**: 행사 카드. 날짜 배지(`badge-pill-primary`) + 제목 + 요약.
+- **`special-worship-rows`**: 예배 안내 특별 예배(#178). 위 `worship-weekday-rows`와 같은 결 — 2px `{colors.ink}` 룰 아래 행(1px 헤어라인) = 시기 `{typography.datetime}` muted |
+  예배명 `{typography.title-md}` + 설명 `{typography.body-md}` | 시간 `{typography.datetime-lg}`(≥48rem 4칸, 그 미만 세로). 카드·배지 없음.
+  위에 **`special-next-band`**(`next-service-band` 결: `{colors.primary-soft}` `{rounded.xl}`, 라벨 `{typography.caption-strong}` primary + 예배명 `{typography.title-lg}` +
+  실제 날짜·요일·시간 `{typography.datetime-lg}` + 남은 날 `{typography.body-md}`) 하나만 강조. 한국 날짜 기준 클라이언트 계산, 상수 `rule`이 하나라도 없으면 띠째 숨김.
+- **`directions-rows`**: 오시는 길 "찾아오는 방법"(#178). 2px ink 룰 + 헤어라인 줄, 행 = lucide 아이콘(28, primary) + 수단 `{typography.title-md}` + 안내 `{typography.body-md}`.
+  카드 틀 없음 — 옆 문의 카드가 밴드의 유일한 박스.
+- **`events-agenda`**: 일정 모바일 목록(#178). 2px ink 룰 아래 날짜별 행 = 왼쪽 날짜 칸(56px: 날짜 숫자 `{typography.title-lg}` tnum + 요일 `{typography.caption}` muted,
+  오늘은 데스크톱 격자와 같은 `{rounded.full}` `primary-soft` 동그라미 + "오늘") | 일정 줄(제목 `{typography.title-md}` + 시간·장소 `{typography.body-sm}`, 같은 날 일정 사이 헤어라인). 행 누르면 상세 모달.
 - **`vehicle-run-card`**: 회원 차량 탑승 신청 카드(`/vehicle-runs`) — schedule-card 변형. `{colors.surface-soft}` 배경.
   헤더(출발시각 `{typography.datetime-lg}`(tnum) + 메모 `{typography.body-sm}` `{colors.muted}` 좌 / 신청됨=`AppliedStatus`(채움 칩이 아니라 lucide `Check` 18px + `{typography.body-md}`(600) `{colors.primary}` 인라인 — 단일 액센트·절제) 우) +
   신청됨이면 1px 헤어라인 아래 "내 신청" 라벨 행 블록(픽업 장소·메모·위치=`지도 보기` 링크, `w-20` 라벨/값 좌측정렬) +
@@ -642,6 +650,8 @@ portal로 뜨는 동작 컴포넌트(Modal·Sheet·Popover·Select·Dropdown·To
 > 최초 등록·구현하고 나머지 도메인은 재사용만 한다. (조율 기준: `docs/superpowers/specs/2026-06-14-admin-track-parallelization.md`)
 
 <!-- admin:02 콘텐츠(설교·공지) — markdown-editor · tag-multiselect · admin-inline-action -->
+- **`challenge-rows`**: 챌린지 목록(#178, 2열 카드 대체). 피처 카드 아래 2px ink 룰 + 헤어라인 줄, 행 전체 상세 링크 = 기간(시작 / ~ 끝 두 줄) `{typography.datetime}` muted |
+  상태 Badge(진행 중만 primary) + 제목 `{typography.title-md}`(hover primary) + 범위·총 장 수 `{typography.body-sm}` | 하루 N장 `{typography.body-sm}`(≥48rem 4칸).
 - **`markdown-editor`**: 어드민 본문 작성/미리보기 탭 에디터. `Tabs`(작성·미리보기) + `Textarea` + `MarkdownContent`(미리보기 재사용). 미리보기는 탭 활성 시에만 변환. 작성 탭 상단에 `markdown-toolbar` 장착 — 마크다운을 몰라도 버튼으로 서식 적용. 토큰 공유(가독성 우선 단순 변형).
 - **`markdown-toolbar`**: 서식 버튼줄(`role="toolbar"`, lucide 아이콘 + `aria-label`·`title`). 제목 3단계·굵게·기울임·취소선·목록·번호목록·인용·구분선은 선택 영역 토글(순수 로직 `lib/markdownEditing`), 링크·유튜브·표(열 1~8·행 1~20 크기 지정, `buildTable`)는 입력 Dialog(검증 실패 인라인 에러, `InsertDialogShell` 공용 뼈대), 이미지는 `media-picker`(image·multi) 재사용 → `media:{id}` 단독 문단 자동 삽입. `CircleHelp` 버튼 → 치트시트 Dialog("이렇게 쓰면 → 이렇게 보입니다", `MarkdownContent` 재사용 + 문단·유튜브·이미지 규칙 안내). 직접 버튼 삽입은 execCommand 우선(Ctrl+Z 보존)·상태 교체 폴백, **Dialog 삽입은 상태 교체 직행**(열린 Dialog의 포커스 트랩이 execCommand를 가로채 본문이 갱신되지 않는 실브라우저 버그 방지). 본문 표는 `prose-church` table 스타일(hairline 보더·surface-soft 헤더)로 렌더.
 - **`tag-multiselect`**: 기존 태그 다중선택. 인라인 칩 토글 — 태그 전체를 폼 안에 항상 펼쳐 렌더(`aria-pressed` 버튼), 선택=primary 채움+lucide `Check`, 비선택=surface-strong. 플로팅(Popover) 미사용 — 모달(Dialog) 안에서도 레이어 문제 없음. 옵션은 `getTags`. 신규 생성 없음(06 소관).

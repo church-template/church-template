@@ -1,5 +1,6 @@
 // 정적 페이지 콘텐츠·예배 시간·CTA 카피. 배포 시 이 파일만 교체(스펙 D4). 샘플 문구.
 import type { HeroMedia } from "@/hero/types";
+import type { SpecialRule } from "@/lib/specialService";
 
 // 소망 본문 세그먼트 — 의미 구절 자체를 상징색 글자로(괄호 표기 없이). color 없는 조각은 평문.
 export interface HopeSegment {
@@ -327,6 +328,7 @@ export const WORSHIP = {
   sermonCta: "설교 말씀 보기", // 정기예배 섹션 하단 → 설교 목록 진입 CTA(#109)
   specialHeading: "특별 예배",
   specialLead: "연중 진행되는 의미 있는 특별 예배들입니다.",
+  specialNextLabel: "다음 특별 예배",
   placeHeading: "예배 장소 안내",
   placeLead: "모든 예배는 교회에서 진행됩니다.",
   placeLandmark: "예시 건물",
@@ -416,9 +418,11 @@ export const WORSHIP_SERVICES: WorshipService[] = [
 
 export interface SpecialService {
   name: string;
-  date: string; // 배지 — "1월 1일", "부활절 주일" 등 서술형 혼용
+  date: string; // 시기 — "1월 1일", "부활절 주일" 등 서술형 혼용
   time: string;
   desc: string;
+  /** 다음 특별 예배 계산 규칙 — 하나라도 없으면 "다음 특별 예배" 띠를 숨긴다(lib/specialService) */
+  rule?: SpecialRule;
 }
 export const SPECIAL_SERVICES: SpecialService[] = [
   {
@@ -426,36 +430,42 @@ export const SPECIAL_SERVICES: SpecialService[] = [
     date: "1월 1일",
     time: "오전 0시",
     desc: "새해를 맞아 하나님께 감사드리는 특별예배",
+    rule: { type: "fixed", month: 1, day: 1 },
   },
   {
     name: "부활절 예배",
     date: "부활절 주일",
     time: "오전 11시",
     desc: "예수님의 부활을 기념하는 특별예배",
+    rule: { type: "easter" },
   },
   {
     name: "창립기념감사 예배",
     date: "5월 셋째 주일",
     time: "오전 11시",
     desc: "교회 창립을 기념하며 하나님께 감사드리는 예배",
+    rule: { type: "nthSunday", month: 5, n: 3 },
   },
   {
     name: "맥추 감사절 예배",
     date: "6월 마지막 주일",
     time: "오전 11시",
     desc: "맥추 감사절을 맞아 첫 열매를 드리며 감사드리는 예배",
+    rule: { type: "lastSunday", month: 6 },
   },
   {
     name: "추수 감사절 예배",
     date: "11월 셋째 주일",
     time: "오전 11시",
     desc: "한 해의 은혜를 되돌아보며 감사드리는 예배",
+    rule: { type: "nthSunday", month: 11, n: 3 },
   },
   {
     name: "성탄절 예배",
     date: "12월 25일",
     time: "오전 11시",
     desc: "예수님의 탄생을 기념하는 성탄절 특별예배",
+    rule: { type: "fixed", month: 12, day: 25 },
   },
 ];
 
