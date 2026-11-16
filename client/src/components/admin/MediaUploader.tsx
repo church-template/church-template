@@ -6,6 +6,7 @@ import { typo } from "@/constants/typography";
 import { Button } from "@/components/ui/Button";
 import { adminOnError } from "@/lib/admin/mutationHandlers";
 import { uploadMedia, type MediaResponse } from "@/lib/api/media.admin";
+import { shouldConvert, toWebp } from "@/lib/imageToWebp";
 
 // accept별 허용 MIME(백엔드 매직바이트 검증과 동일 — 즉시 피드백으로 413/400 왕복 감소).
 const MIME: Record<"image" | "pdf" | "all", string[]> = {
@@ -32,7 +33,8 @@ export function MediaUploader({ accept, multiple = false, onUploaded, disabled }
   function validate(files: File[]): string | null {
     for (const f of files) {
       if (!allowed.includes(f.type)) return "허용하지 않는 형식입니다. (JPEG·PNG·GIF·WEBP·PDF)";
-      if (f.size > MAX_BYTES) return "파일 용량이 10MB를 초과했습니다.";
+      // 변환 대상 사진은 1600px WebP로 줄어 올라가므로 원본 용량으로 막지 않는다(변환 실패 시엔 서버가 FILE_SIZE_EXCEEDED로 거절).
+      if (f.size > MAX_BYTES && !shouldConvert(f.type)) return "파일 용량이 10MB를 초과했습니다.";
     }
     return null;
   }
@@ -51,7 +53,8 @@ export function MediaUploader({ accept, multiple = false, onUploaded, disabled }
     // 성공분을 catch에서 onUploaded로 호출부에 전달(선택 상태 반영). 그 후 에러 토스트.
     const uploaded: MediaResponse[] = [];
     try {
-      for (const f of files) uploaded.push(await uploadMedia(f));
+      // 한 장씩 변환·업로드 — 큰 사진 여러 장을 한꺼번에 디코딩하지 않게(휴대폰 메모리).
+      for (const f of files) uploaded.push(await uploadMedia(await toWebp(f)));
       onUploaded(uploaded);
     } catch (e) {
       if (uploaded.length > 0) onUploaded(uploaded);
