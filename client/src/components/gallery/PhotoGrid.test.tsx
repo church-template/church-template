@@ -28,4 +28,20 @@ describe("PhotoGrid", () => {
     fireEvent.click(screen.getByRole("button", { name: "1번째 사진 크게 보기" }));
     expect(screen.getByRole("dialog")).toBeDefined();
   });
+
+  it("사진 url(서명 경로)이 있으면 그것을, 없으면 mediaId로 조립한다", () => {
+    const { container } = render(
+      <PhotoGrid photos={[{ ...photos[0], url: "/api/media/10?exp=1&sig=a" }, photos[1]]} albumTitle="앨범" />,
+    );
+    const srcs = [...container.querySelectorAll("img")].map((i) => i.getAttribute("src") ?? "");
+    expect(srcs[0]).toBe("/api/media/10?exp=1&sig=a");
+    expect(srcs[1]).toContain(encodeURIComponent("/api/media/20")); // 기존 최적화 경유
+  });
+
+  it("라이트박스도 서명 url을 쓴다", () => {
+    render(<PhotoGrid photos={[{ ...photos[0], url: "/api/media/10?exp=1&sig=a" }]} albumTitle="앨범" />);
+    fireEvent.click(screen.getByRole("button", { name: "1번째 사진 크게 보기" }));
+    const big = screen.getByRole("dialog").querySelector("img");
+    expect(big?.getAttribute("src")).toBe("/api/media/10?exp=1&sig=a");
+  });
 });

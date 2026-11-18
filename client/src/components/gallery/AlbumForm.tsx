@@ -70,7 +70,7 @@ export function AlbumForm({ mode, initial }: AlbumFormProps) {
         <Controller
           control={control}
           name="description"
-          render={({ field }) => <MarkdownEditor id="album-desc" value={field.value} onChange={field.onChange} error={errors.description?.message} />}
+          render={({ field }) => <MarkdownEditor id="album-desc" value={field.value} onChange={field.onChange} error={errors.description?.message} mediaUrls={initial?.mediaUrls} />}
         />
       </div>
       <Controller control={control} name="tagIds" render={({ field }) => <TagMultiSelect value={field.value} onChange={field.onChange} />} />

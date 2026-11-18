@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { typo } from "@/constants/typography";
-import { apiUrl } from "@/lib/auth/apiBase";
+import { mediaSrc } from "@/lib/mediaUrl";
 import { Button } from "@/components/ui/Button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -20,11 +20,13 @@ export interface MediaPickerProps {
   onOpenChange: (v: boolean) => void;
   accept: "image" | "pdf";
   multiple?: boolean;
-  onConfirm: (mediaIds: number[]) => void;
+  // picked: 고른 항목 전체(서명 url 포함) — 저장 전 미리보기가 비공개 미사용 파일을 그릴 때 쓴다(church-backend#92).
+  onConfirm: (mediaIds: number[], picked: MediaResponse[]) => void;
 }
 
 export function MediaPicker({ open, onOpenChange, accept, multiple = false, onConfirm }: MediaPickerProps) {
   const [selected, setSelected] = useState<number[]>([]);
+  const [uploadedItems, setUploadedItems] = useState<MediaResponse[]>([]); // 목록 첫 페이지 밖일 수 있어 따로 보관
   const params = { type: accept };
   const media = useQuery({
     queryKey: adminKeys.list("media", params),
@@ -39,12 +41,14 @@ export function MediaPicker({ open, onOpenChange, accept, multiple = false, onCo
     );
   }
   function handleUploaded(uploaded: MediaResponse[]) {
+    setUploadedItems((prev) => [...prev, ...uploaded]);
     const ids = uploaded.map((m) => m.id);
     setSelected((prev) => (multiple ? [...prev, ...ids] : ids.slice(-1)));
     media.refetch();
   }
   function confirm() {
-    onConfirm(selected);
+    const known = new Map([...(media.data?.content ?? []), ...uploadedItems].map((m) => [m.id, m]));
+    onConfirm(selected, selected.flatMap((id) => known.get(id) ?? []));
     setSelected([]);
     onOpenChange(false);
   }
@@ -85,7 +89,8 @@ export function MediaPicker({ open, onOpenChange, accept, multiple = false, onCo
                     {accept === "image" ? (
                       // fill 모드는 부모 relative 필수(next/image 규약). 다이얼로그 셀 폭 근사 sizes=200px.
                       <span className="relative block aspect-square w-full overflow-hidden rounded-md">
-                        <Image src={apiUrl(`/api/media/${m.id}`)} alt={m.filename} fill sizes="200px" className="object-cover" />
+                        {/* 서명 주소(m.url)는 최적화 불가·만료 위험 → unoptimized */}
+                        <Image src={mediaSrc(m.id, m.url)} unoptimized={m.url !== undefined} alt={m.filename} fill sizes="200px" className="object-cover" />
                       </span>
                     ) : (
                       <span className={cn(typo.bodySm, "block truncate p-sm text-ink")}>{m.filename}</span>

@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 import { typo } from "@/constants/typography";
-import { apiUrl } from "@/lib/auth/apiBase";
+import { mediaSrc } from "@/lib/mediaUrl";
 import type { GalleryPhotoResponse } from "@/lib/api/types";
 
 interface PhotoLightboxProps {
@@ -53,7 +53,7 @@ export function PhotoLightbox({ photos, albumTitle, index, onIndexChange }: Phot
             <div className="relative flex items-center justify-center">
               {/* eslint-disable-next-line @next/next/no-img-element -- 프레젠테이션 셸 */}
               <img
-                src={apiUrl(`/api/media/${current.mediaId}`)}
+                src={mediaSrc(current.mediaId, current.url)}
                 alt={current.caption ?? ""}
                 /* max-h-[70vh]: 뷰포트 높이 제약(색·간격 토큰이 아닌 레이아웃 값) — dept-hero 70vh 선례와 동일 */
                 className="max-h-[70vh] w-auto rounded-md object-contain"

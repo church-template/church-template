@@ -14,6 +14,8 @@ import { DeptActivities } from "@/components/departments/DeptActivities";
 import { DeptPrograms } from "@/components/departments/DeptPrograms";
 import { DeptGallery } from "@/components/departments/DeptGallery";
 import { DeptInvite } from "@/components/departments/DeptInvite";
+import { DeptEditAction } from "@/components/departments/DeptEditAction";
+import { getDepartmentOverrides } from "@/lib/api/departments";
 import {
   allDepartmentSlugs,
   findDepartment,
@@ -54,6 +56,11 @@ export default async function DepartmentDetailPage({
   if (!dept) {
     notFound();
   }
+  // backendId가 연결된 부서는 대표 사진·활동 사진·소개 본문을 API 값으로 덮어쓴다(비거나 API 장애면 상수 유지).
+  const overrides = await getDepartmentOverrides(dept);
+  const media = overrides.media ?? dept.media;
+  const gallery = overrides.gallery ?? dept.gallery;
+  const description = overrides.introMarkdown ?? dept.description;
 
   // 줄 단위 카피 → block span(메인 caption과 동일 패턴, "\n" 이슈 차단).
   const caption = dept.caption.map((line, i) => (
@@ -66,12 +73,15 @@ export default async function DepartmentDetailPage({
     <>
       <SiteHeader variant="transparent" solid />
       <main className="flex-1">
-        <DeptHero title={dept.name} caption={caption} media={dept.media} />
+        <DeptHero title={dept.name} caption={caption} media={media} />
+        {dept.backendId != null ? (
+          <Container className="flex justify-end pt-base">
+            <DeptEditAction backendId={dept.backendId} />
+          </Container>
+        ) : null}
         <Container as="section" className="py-section">
           {dept.leader ? <DeptLeader name={dept.leader} /> : null}
-          {dept.description ? (
-            <MarkdownContent source={dept.description} className="mt-base" />
-          ) : null}
+          {description ? <MarkdownContent source={description} className="mt-base" /> : null}
         </Container>
         {/* 서사 퍼널: 소개 → 사진(감정 후크) → 활동·프로그램(무엇을) → 알림(언제/어디서) → 초대. */}
         {dept.intro && dept.features?.length ? (
@@ -81,8 +91,8 @@ export default async function DepartmentDetailPage({
             items={dept.features}
           />
         ) : null}
-        {dept.gallery?.length ? (
-          <DeptGallery heading={DEPT_SECTIONS.gallery} photos={dept.gallery} />
+        {gallery?.length ? (
+          <DeptGallery heading={DEPT_SECTIONS.gallery} photos={gallery} moreLabel={DEPT_SECTIONS.galleryMore} />
         ) : null}
         {dept.activities?.length ? (
           <DeptActivities heading={DEPT_SECTIONS.activities} items={dept.activities} />

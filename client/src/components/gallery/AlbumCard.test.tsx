@@ -47,4 +47,14 @@ describe("AlbumCard", () => {
     render(<AlbumCard album={{ ...base, author: null }} />);
     expect(screen.queryByText(/관리자/)).toBeNull();
   });
+
+  it("thumbnailUrl(서명 경로)이 있으면 그 주소를 최적화 없이 쓴다", () => {
+    const { container } = render(<AlbumCard album={{ ...base, thumbnailUrl: "/api/media/42?exp=9&sig=s" }} />);
+    expect(container.querySelector("img")?.getAttribute("src")).toBe("/api/media/42?exp=9&sig=s");
+  });
+
+  it("thumbnailUrl이 null이면 thumbnailMediaId가 있어도 플레이스홀더(썸네일 없음)", () => {
+    const { container } = render(<AlbumCard album={{ ...base, thumbnailUrl: null }} />);
+    expect(container.querySelector("img")).toBeNull();
+  });
 });

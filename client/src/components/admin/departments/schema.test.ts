@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { departmentSchema } from "./schema";
 
-const base = { name: "청년부", description: "", leader: "", parentId: null, sortOrder: null };
+const base = { name: "청년부", description: "", leader: "", parentId: null, sortOrder: null, heroMediaId: null, albumId: null };
 
 describe("departmentSchema", () => {
   it("name이 비면 실패한다", () => {
@@ -14,7 +14,7 @@ describe("departmentSchema", () => {
   });
 
   it("유효한 값은 통과한다", () => {
-    const r = departmentSchema.safeParse({ name: "청년부", description: "설명", leader: "김집사", parentId: 1, sortOrder: 10 });
+    const r = departmentSchema.safeParse({ name: "청년부", description: "설명", leader: "김집사", parentId: 1, sortOrder: 10, heroMediaId: 5, albumId: 3 });
     expect(r.success).toBe(true);
   });
 

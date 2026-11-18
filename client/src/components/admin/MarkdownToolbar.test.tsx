@@ -5,9 +5,9 @@ import { MarkdownEditor } from "./MarkdownEditor";
 
 // MediaPicker는 TanStack Query 의존 — 여기선 선택 확정 콜백만 검증한다.
 vi.mock("./MediaPicker", () => ({
-  MediaPicker: ({ open, onConfirm }: { open: boolean; onConfirm: (ids: number[]) => void }) =>
+  MediaPicker: ({ open, onConfirm }: { open: boolean; onConfirm: (ids: number[], picked: { id: number }[]) => void }) =>
     open ? (
-      <button type="button" onClick={() => onConfirm([3, 7])}>
+      <button type="button" onClick={() => onConfirm([3, 7], [{ id: 3 }, { id: 7 }])}>
         미디어 선택 확정
       </button>
     ) : null,

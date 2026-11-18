@@ -58,7 +58,7 @@ export function AlbumDetail({ id }: { id: number }) {
           {album.description ? (
             <>
               <div className="mt-lg border-t border-hairline" />
-              <MarkdownContent source={album.description} className="mt-lg" />
+              <MarkdownContent source={album.description} mediaUrls={album.mediaUrls} className="mt-lg" />
             </>
           ) : null}
           <PhotoGrid photos={album.photos} albumTitle={album.title} albumId={album.id} />

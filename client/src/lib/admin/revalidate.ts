@@ -21,3 +21,7 @@ export async function revalidateBulletins() {
 export async function revalidateTags() {
   updateTag("tags");
 }
+
+export async function revalidateDepartments() {
+  updateTag("departments");
+}

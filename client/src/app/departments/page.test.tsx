@@ -19,9 +19,9 @@ function stubBrowserApis() {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("DepartmentsPage (사역 목록)", () => {
-  it("헤드라인과 부서별 소개·상세 링크를 렌더한다(상수 구동)", () => {
+  it("헤드라인과 부서별 소개·상세 링크를 렌더한다(상수 구동)", async () => {
     stubBrowserApis();
-    render(<DepartmentsPage />);
+    render(await DepartmentsPage());
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(DEPT_PAGE.headline.join(""));
     const first = DEPARTMENTS[0];
     expect(

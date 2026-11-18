@@ -59,6 +59,8 @@ export interface DepartmentCardResponse {
   leader: string;
   parentId: number | null;
   sortOrder: number;
+  // 부서 사진 칸(church-backend#92 계약). 백엔드 반영 전에는 응답에 없으므로 optional — 없음=null로 다룬다.
+  heroMediaId?: number | null;
 }
 
 export interface DepartmentDetailResponse extends DepartmentCardResponse {
@@ -66,6 +68,8 @@ export interface DepartmentDetailResponse extends DepartmentCardResponse {
   createdAt: string; // LocalDateTime
   updatedAt: string;
   version: number; // 낙관적 락
+  albumId?: number | null; // 활동 사진 앨범(없거나 앨범이 삭제됐으면 null)
+  photos?: number[]; // 연결 앨범 사진의 mediaId(앨범 순서). 없으면 []. 부서 연결 사진은 공개라 무서명 주소
 }
 
 export interface DepartmentNode extends DepartmentCardResponse {
@@ -150,6 +154,8 @@ export interface GalleryAlbumCardResponse {
   id: number;
   title: string;
   thumbnailMediaId: number | null; // 첫 사진, 없으면 null → 플레이스홀더
+  // 서명 경로(church-backend#92). null = 썸네일 없음(플레이스홀더). 칸이 없으면(구 백엔드) thumbnailMediaId로 조립
+  thumbnailUrl?: string | null;
   photoCount: number;
   createdAt: string; // offset 없는 LocalDateTime — parseServerDate/formatDate로 표기
   tags: TagResponse[];
@@ -159,6 +165,7 @@ export interface GalleryAlbumCardResponse {
 export interface GalleryPhotoResponse {
   id: number;
   mediaId: number; // /api/media/{mediaId} 공개 서빙
+  url?: string; // 서명 경로(church-backend#92). 칸이 없을 때(구 백엔드)만 mediaId로 조립
   caption?: string | null;
   sortOrder: number;
 }
@@ -173,6 +180,9 @@ export interface GalleryAlbumDetailResponse {
   updatedAt: string;
   version: number; // 낙관락 — 앨범 PATCH에서 읽어 전송(스펙 §8)
   photos: GalleryPhotoResponse[];
+  // 설명 본문 media:{id} → 서명 경로(church-backend#92 확정: 키=미디어 id 문자열, 열 수 없는 id는 키 없음).
+  // 칸이 없으면(구 백엔드) 무서명 주소로 대체한다.
+  mediaUrls?: Record<string, string>;
 }
 
 export interface PositionResponse {
