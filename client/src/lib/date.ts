@@ -91,3 +91,21 @@ const kstDateInputFmt = new Intl.DateTimeFormat("en-CA", {
 export function todayKstDate(): string {
   return kstDateInputFmt.format(new Date());
 }
+
+// datetime-local 프리필용 지금(KST) "YYYY-MM-DDTHH:mm". 시각은 formatToParts로 조립한다 —
+// hourCycle h23으로 자정을 "00"으로 받고(h24 로케일의 "24" 방지), 러너 TZ와 무관하게 KST 기준이다.
+const kstDateTimeFmt = new Intl.DateTimeFormat("en-CA", {
+  timeZone: KST,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
+
+/** 지금(KST) "YYYY-MM-DDTHH:mm" — datetime-local 입력 기본값용(새 일정·운행일 등). */
+export function nowKstDateTime(): string {
+  const p = Object.fromEntries(kstDateTimeFmt.formatToParts(new Date()).map((x) => [x.type, x.value]));
+  return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`;
+}

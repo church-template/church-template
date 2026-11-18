@@ -34,6 +34,17 @@ const renderDialog = (props: Partial<Parameters<typeof ChallengeFormDialog>[0]> 
   );
 
 describe("ChallengeFormDialog", () => {
+  it("새 챌린지는 시작일이 오늘(KST)로 채워져 열린다", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-07-19T05:07:00Z")); // = 2026-07-19 KST
+    try {
+      renderDialog();
+      await waitFor(() => expect((screen.getByLabelText("시작일") as HTMLInputElement).value).toBe("2026-07-19"));
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("신약 프리셋 클릭 → 범위 40~66 + 미리보기(총 260장)", async () => {
     renderDialog();
     fireEvent.click(screen.getByRole("button", { name: "신약" }));
@@ -41,6 +52,16 @@ describe("ChallengeFormDialog", () => {
     expect((screen.getByLabelText("끝 권") as HTMLSelectElement).value).toBe("66");
     fireEvent.change(screen.getByLabelText("목표 일수"), { target: { value: "65" } });
     expect(await screen.findByText(/총 260장 · 하루 4장/)).toBeDefined();
+  });
+
+  it("목표 일수가 상한(3650)을 넘으면 종료일 미리보기를 건너뛰고 폼이 깨지지 않는다", async () => {
+    renderDialog(); // 새 챌린지는 시작일이 채워져 있어 종료일 계산이 바로 돈다
+    fireEvent.click(screen.getByRole("button", { name: "신약" }));
+    fireEvent.change(screen.getByLabelText("목표 일수"), { target: { value: "1000000000" } });
+    await waitFor(() => expect(screen.queryByText(/총 260장/)).toBeNull());
+    expect(screen.getByLabelText("목표 일수")).toBeDefined();
+    fireEvent.change(screen.getByLabelText("목표 일수"), { target: { value: "3650" } });
+    expect(await screen.findByText(/총 260장 · 하루 1장 · \d{4}-\d{2}-\d{2} 종료/)).toBeDefined();
   });
 
   it("생성 제출: createChallenge 호출(빈 소개 생략)", async () => {

@@ -5,6 +5,7 @@ import {
   formatEventTime,
   formatClockTime,
   todayKstDate,
+  nowKstDateTime,
 } from "./date";
 
 describe("parseServerDate", () => {
@@ -86,5 +87,21 @@ describe("todayKstDate", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-07-19T14:59:00Z")); // = 2026-07-19 23:59 KST
     expect(todayKstDate()).toBe("2026-07-19");
+  });
+});
+
+describe("nowKstDateTime", () => {
+  afterEach(() => vi.useRealTimers());
+
+  it("지금 시각을 KST의 datetime-local 값(YYYY-MM-DDTHH:mm)으로 만든다(러너 TZ 무관)", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-19T05:07:42Z")); // = 2026-07-19 14:07 KST
+    expect(nowKstDateTime()).toBe("2026-07-19T14:07");
+  });
+
+  it("KST 자정 직후는 24시가 아니라 00시로, 날짜는 새 날짜로 만든다", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-19T15:05:00Z")); // = 2026-07-20 00:05 KST
+    expect(nowKstDateTime()).toBe("2026-07-20T00:05");
   });
 });

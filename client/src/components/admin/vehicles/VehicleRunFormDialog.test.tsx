@@ -26,8 +26,25 @@ const renderDialog = (editTarget: VehicleRunDetailResponse | null = null, onOpen
   );
 
 describe("VehicleRunFormDialog", () => {
-  it("출발 시각 미선택 제출이면 검증 메시지 + API 미호출", async () => {
+  it("새 운행일은 출발 시각이 지금(KST)으로 채워져 열린다", () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-07-19T05:07:00Z")); // = 2026-07-19 14:07 KST
+    try {
+      renderDialog();
+      expect((screen.getByLabelText("출발 시각") as HTMLInputElement).value).toBe("2026-07-19T14:07");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("수정할 때는 저장된 출발 시각을 그대로 보인다(기본값으로 덮지 않음)", () => {
+    renderDialog({ id: 3, departsAt: "2026-08-02T09:00:00", version: 1 } as unknown as VehicleRunDetailResponse);
+    expect((screen.getByLabelText("출발 시각") as HTMLInputElement).value).toBe("2026-08-02T09:00");
+  });
+
+  it("출발 시각을 비우고 제출하면 검증 메시지 + API 미호출", async () => {
     renderDialog();
+    fireEvent.change(screen.getByLabelText("출발 시각"), { target: { value: "" } });
     fireEvent.click(screen.getByRole("button", { name: "저장" }));
     expect(await screen.findByText("출발 시각을 선택해 주세요.")).toBeDefined();
     expect(createMock).not.toHaveBeenCalled();

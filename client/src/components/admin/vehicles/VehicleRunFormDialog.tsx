@@ -14,7 +14,7 @@ import { adminOnError } from "@/lib/admin/mutationHandlers";
 import { adminKeys } from "@/lib/admin/queryKeys";
 import { notify } from "@/lib/notify";
 import { ACTION } from "@/constants/actionButton";
-import { toLocalInput, toServerDateTime } from "@/lib/date";
+import { toLocalInput, toServerDateTime, nowKstDateTime } from "@/lib/date";
 import { createVehicleRun, patchVehicleRun } from "@/lib/api/vehicles.admin";
 import type { VehicleRunDetailResponse } from "@/lib/api/types";
 
@@ -43,7 +43,7 @@ export function VehicleRunFormDialog({ open, onOpenChange, editTarget }: Vehicle
   useEffect(() => {
     if (!open) return;
     if (editTarget) reset({ departsAt: toLocalInput(editTarget.departsAt), note: editTarget.note ?? "" });
-    else reset(EMPTY);
+    else reset({ ...EMPTY, departsAt: nowKstDateTime() }); // 새 운행일은 지금(KST)으로 시작
   }, [open, editTarget, reset]);
 
   const invalidate = () => {

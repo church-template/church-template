@@ -17,6 +17,7 @@ import { notify } from "@/lib/notify";
 import { revalidateBulletins } from "@/lib/admin/revalidate";
 import { createBulletin, patchBulletin } from "@/lib/api/bulletins.admin";
 import type { BulletinDetailResponse } from "@/lib/api/types";
+import { todayKstDate } from "@/lib/date";
 import { bulletinSchema, type BulletinFormValues } from "./schemas";
 
 export interface BulletinFormProps {
@@ -33,7 +34,8 @@ export function BulletinForm({ mode, initial }: BulletinFormProps) {
     resolver: zodResolver(bulletinSchema),
     defaultValues: {
       title: initial?.title ?? "",
-      serviceDate: initial?.serviceDate ?? "",
+      // 새 주보는 예배일을 오늘로 시작(수정은 저장값) — 대부분 가까운 날짜라 매번 고르지 않아도 되게
+      serviceDate: initial?.serviceDate ?? todayKstDate(),
       mediaId: initial?.mediaId ?? 0,
     },
   });
