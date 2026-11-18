@@ -578,6 +578,7 @@ portal로 뜨는 동작 컴포넌트(Modal·Sheet·Popover·Select·Dropdown·To
   확장(width/height 애니메이션 금지), placeholder 측정으로 시작 inset 산출. 확장 종료(0.55) 후
   카피 페이드인(0.60~, 겹침 0.05 유지). reduced-motion은 정적 70vh. 검증 코드라 내부 수치(px·rgba·#fff)는
   토큰 인라인 금지의 예외. `HeroMedia`는 CrossHero와 공유(`@/hero/types`).
+- **`dept-gallery`**: 부서 상세 활동 사진. 사진 그리드, 클릭 시 라이트박스(좌우·키보드). 한 번에 8장씩 보이고 아래 `button-secondary` "사진 더 보기"로 8장씩 더 연다(라이트박스는 펼치지 않은 사진까지 전체). 관리 화면에서 부서에 앨범(API)을 연결하면 그 사진이, 없으면 상수 사진이 보인다. 대표 사진·소개 글도 API 값이 있으면 상수 대신 쓴다(`backendId`가 있는 부서만, 조회 실패 시 상수 유지).
 - **`department-card`**: 사역 부서 카드(목록·하위부서 공용). 16:9 부서 히어로 이미지 썸네일 + 이름
   `{typography.title-md}` + 인도자 `{typography.datetime}` `{colors.muted}`. `sermon-card` 호버(soft drop +
   썸네일 1.03 줌) 재사용. `/departments/{slug}`로 링크, 목록 카드 이미지 = 상세 히어로 이미지(목록↔상세 시각 연속성).

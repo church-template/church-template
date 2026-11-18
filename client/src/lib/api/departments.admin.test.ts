@@ -49,10 +49,10 @@ describe("부서 어드민 API", () => {
 
   it("updateDepartment은 PUT로 version 포함 body를 보낸다", async () => {
     apiMutateMock.mockResolvedValue({ id: 9 });
-    await updateDepartment(9, { name: "청년부", parentId: null, version: 2 });
+    await updateDepartment(9, { name: "청년부", parentId: null, version: 2, heroMediaId: 11, albumId: null });
     expect(apiMutateMock).toHaveBeenCalledWith("/api/admin/departments/9", {
       method: "PUT",
-      body: { name: "청년부", parentId: null, version: 2 },
+      body: { name: "청년부", parentId: null, version: 2, heroMediaId: 11, albumId: null },
     });
   });
 

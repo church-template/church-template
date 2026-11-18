@@ -1,9 +1,12 @@
+import { mediaSrc } from "@/lib/mediaUrl";
 import { marked } from "marked";
 import DOMPurify from "isomorphic-dompurify";
 import { parseYouTubeId } from "./youtube";
 
 // 경계 안전: media:42 뒤에 숫자가 이어지면 매칭 안 함(420/421 오탐 방지) — 서버 추적 규약과 동일.
 const MEDIA_REF = /media:(\d+)(?!\d)/g;
+// 이미지 문법 전체(![alt](media:42 …)) — 서명 맵에 없는 id의 이미지를 통째로 지울 때 쓴다.
+const MEDIA_IMAGE = /!\[[^\]]*\]\(\s*media:(\d+)(?!\d)[^)]*\)/g;
 
 // 마크다운이 생성하는 태그만 허용. 저자 작성 raw HTML(<div>·<iframe> 등)은 태그가 제거되고(내용은 보존),
 // <script>·이벤트 핸들러는 통째 제거된다 → 가이드 5.1 "raw HTML 비허용" + 이슈 §7 "raw HTML 제거" 충족.
@@ -52,9 +55,23 @@ export function splitYouTubeSegments(raw: string | null | undefined): MarkdownSe
   return segments;
 }
 
-export function renderMarkdown(raw: string | null | undefined): string {
+// 본문의 모든 media:{id} → 무서명 경로 맵. 편집 미리보기가 서명 맵과 합쳐 "없는 id = 무서명"으로 쓸 때 사용.
+export function unsignedMediaUrls(raw: string): Record<string, string> {
+  return Object.fromEntries([...raw.matchAll(MEDIA_REF)].map(([, id]) => [id, `/api/media/${id}`]));
+}
+
+// mediaUrls: media:{id} → 서명 경로 맵(갤러리 앨범 설명 `mediaUrls`, church-backend#92 확정 형태 Record<string,string>).
+// - 미지정: 기존처럼 무서명 /api/media/{id}(공지·행사·부서 본문은 공개).
+// - 지정: 맵에 없는 id는 열 수 없는 미디어 → 그 이미지는 렌더하지 않는다(링크·단독 토큰은 무서명으로 둔다).
+export function renderMarkdown(raw: string | null | undefined, mediaUrls?: Record<string, string>): string {
   if (!raw) return ""; // 서버가 본문 없음을 null로 내려준다(설교 content 등) — replace 크래시 방어
-  const withUrls = raw.replace(MEDIA_REF, (_, id) => `/api/media/${id}`); // 1) media:{id} → 공개 URL
+  const kept = mediaUrls
+    ? raw.replace(MEDIA_IMAGE, (img, id: string) => (Object.hasOwn(mediaUrls, id) ? img : ""))
+    : raw;
+  // 1) media:{id} → URL. API 베이스(교회 접두사 포함)를 거쳐야 백엔드를 향한다 — 상대경로로 두면 프론트 도메인을 향한다.
+  const withUrls = kept.replace(MEDIA_REF, (_, id: string) =>
+    mediaSrc(id, mediaUrls && Object.hasOwn(mediaUrls, id) ? mediaUrls[id] : undefined),
+  );
   const html = marked.parse(withUrls, { async: false }) as string;        // 2) MD → HTML
   return DOMPurify.sanitize(html, { ALLOWED_TAGS, ALLOWED_ATTR });        // 3) 마크다운 태그만 허용(raw HTML 제거)
 }

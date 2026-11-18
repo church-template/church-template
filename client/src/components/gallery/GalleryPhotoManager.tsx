@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { cn } from "@/lib/utils";
+import { typo } from "@/constants/typography";
 import { RequirePermission } from "@/components/admin/RequirePermission";
 import { MediaPicker } from "@/components/admin/MediaPicker";
 import { DeleteConfirmDialog } from "@/components/admin/DeleteConfirmDialog";
@@ -31,8 +33,12 @@ export function AddPhotosButton({ albumId }: { albumId: number }) {
   });
   return (
     <RequirePermission permission="GALLERY_WRITE">
-      <div className="mt-lg flex justify-end">
+      {/* 백엔드 갤러리 응답에 "부서 연결(공개) 중" 표시가 없어 조건부로 못 띄운다 — 관리자에게 항상 알린다(church-backend#92). */}
+      <div className="mt-lg flex flex-col items-end gap-xxs">
         <Button type="button" variant="secondary" onClick={() => setOpen(true)}>사진 추가</Button>
+        <p className={cn(typo.caption, "text-muted")}>
+          이 앨범이 부서에 연결되어 있으면 추가한 사진도 누구에게나 공개됩니다.
+        </p>
       </div>
       <MediaPicker
         open={open}

@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { typo } from "@/constants/typography";
 import { Button, buttonVariants } from "@/components/ui/Button";
 import { ACTION } from "@/constants/actionButton";
-import { apiUrl } from "@/lib/auth/apiBase";
+import { mediaSrc } from "@/lib/mediaUrl";
 import { DataTable, type Column } from "@/components/admin/DataTable";
 import { MediaUploader } from "@/components/admin/MediaUploader";
 import { DeleteConfirmDialog } from "@/components/admin/DeleteConfirmDialog";
@@ -85,7 +85,8 @@ export function MediaLibrary() {
         <span className="flex items-center gap-sm">
           {m.mimeType.startsWith("image/") ? (
             // 40px 고정 썸네일 — 원본 대신 40px 변환본만 받는다(목록 전송량 절감 최대 지점).
-            <Image src={apiUrl(`/api/media/${m.id}`)} alt="" width={40} height={40} className="size-10 shrink-0 rounded-sm object-cover" />
+            // 서명 주소(m.url)는 최적화 불가·만료 위험 → unoptimized(church-backend#92)
+            <Image src={mediaSrc(m.id, m.url)} unoptimized={m.url !== undefined} alt="" width={40} height={40} className="size-10 shrink-0 rounded-sm object-cover" />
           ) : null}
           <span className="truncate">{m.filename}</span>
         </span>
@@ -133,9 +134,9 @@ export function MediaLibrary() {
           empty={<EmptyState message="등록된 미디어가 없습니다." />}
           actions={(m) => (
             <div className="flex justify-end gap-xs">
-              {/* 열기: 공개 서빙 URL 새 탭 — 이미지 미리보기·PDF 다운로드 */}
+              {/* 열기: 새 탭 — 이미지 미리보기·PDF 다운로드. 미사용 파일은 서명 주소라야 열린다(1시간 유효) */}
               <a
-                href={apiUrl(`/api/media/${m.id}`)}
+                href={mediaSrc(m.id, m.url)}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={`${m.filename} 열기`}

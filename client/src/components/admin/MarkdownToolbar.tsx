@@ -31,6 +31,7 @@ import {
 } from "@/lib/markdownEditing";
 import { LinkInsertDialog, TableInsertDialog, YoutubeInsertDialog } from "./MarkdownInsertDialogs";
 import { MediaPicker } from "./MediaPicker";
+import type { MediaResponse } from "@/lib/api/media.admin";
 import { MarkdownHelpDialog } from "./MarkdownHelpDialog";
 
 export interface MarkdownToolbarProps {
@@ -38,6 +39,8 @@ export interface MarkdownToolbarProps {
   textareaRef: RefObject<HTMLTextAreaElement | null>;
   value: string;
   onChange: (value: string) => void;
+  /** 이미지 삽입 시 고른 미디어 — 편집 미리보기가 서명 주소로 그리도록 상위(MarkdownEditor)에 알린다. */
+  onMediaPicked?: (picked: MediaResponse[]) => void;
 }
 
 type DialogKind = "link" | "youtube" | "image" | "table" | "help" | null;
@@ -101,7 +104,7 @@ function tryNativeInsert(ta: HTMLTextAreaElement, text: string): boolean {
   }
 }
 
-export function MarkdownToolbar({ textareaRef, value, onChange }: MarkdownToolbarProps) {
+export function MarkdownToolbar({ textareaRef, value, onChange, onMediaPicked }: MarkdownToolbarProps) {
   const [dialog, setDialog] = useState<DialogKind>(null);
   // Dialog가 열려 있는 동안 textarea 선택이 바뀔 수 있어, 여는 순간의 선택을 고정한다.
   const savedSel = useRef({ start: 0, end: 0 });
@@ -212,7 +215,10 @@ export function MarkdownToolbar({ textareaRef, value, onChange }: MarkdownToolba
           }}
           accept="image"
           multiple
-          onConfirm={(ids) => insertFromDialog(ids.map((id) => `media:${id}`).join("\n\n"), true)}
+          onConfirm={(ids, picked) => {
+            onMediaPicked?.(picked);
+            insertFromDialog(ids.map((id) => `media:${id}`).join("\n\n"), true);
+          }}
         />
       ) : null}
       {dialog === "table" ? (

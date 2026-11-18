@@ -26,6 +26,9 @@ export interface DeptPhoto {
 
 export interface Department {
   slug: string; // URL 키(/departments/{slug}) — 백엔드 id와 무관, 프론트가 큐레이션
+  // 백엔드 부서 id — 있으면 대표 사진·활동 사진·소개를 관리 화면 값으로 바꿔 보여 준다(없거나 비면 아래 상수).
+  // 교회별 값이라 템플릿 예시는 비워 둔다. 관리 화면에서 부서를 만든 뒤 그 id를 채운다.
+  backendId?: number;
   name: string;
   leader?: string;
   description: string; // raw 마크다운 → MarkdownContent
@@ -314,6 +317,7 @@ export const DEPT_SECTIONS = {
   activities: "주요 활동",
   programs: "특별 프로그램",
   gallery: "활동 사진",
+  galleryMore: "사진 더 보기",
 } as const;
 
 // 카드 16:9 썸네일 — 영상이면 poster, 없으면 기본 에셋. 순수 함수(테스트 용이).

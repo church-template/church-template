@@ -9,13 +9,14 @@ export const GALLERY_PAGE_SIZE = 12;
 export interface AlbumListParams {
   page?: number;
   tagId?: number;
+  size?: number; // 생략 시 GALLERY_PAGE_SIZE
 }
 
 // 앨범 목록(회원전용, GALLERY_VIEW). createdAt,desc 고정. /api/gallery/**는 토큰 필요 → authFetch.
 export async function fetchAlbums(params: AlbumListParams): Promise<Page<GalleryAlbumCardResponse>> {
   const qs = buildListQuery({
     page: params.page,
-    size: GALLERY_PAGE_SIZE,
+    size: params.size ?? GALLERY_PAGE_SIZE,
     sort: "createdAt,desc",
     tagId: params.tagId,
   });

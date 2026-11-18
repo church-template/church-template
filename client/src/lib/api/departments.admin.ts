@@ -13,9 +13,15 @@ export interface DepartmentCreateRequest {
   leader?: string; // ≤100
   parentId?: number | null; // null = 루트
   sortOrder?: number; // 생략 시 백엔드 max+10
+  heroMediaId?: number | null; // 대표 사진 — 생략=유지, null=비움, 숫자=설정(PUT·PATCH 공통, church-backend#92)
+  albumId?: number | null; // 활동 사진 앨범 — 규칙 동일. 둘 다 연결하면 공개된다
 }
 export interface DepartmentUpdateRequest extends DepartmentCreateRequest {
   version: number; // 낙관락. parentId=null=루트화, sortOrder 생략=기존 유지(PUT 시맨틱)
+  // 백엔드는 생략=유지·null=비움(church-backend#92). 생략해도 안전하지만, 수정 창이 두 칸을 편집하므로
+  // 타입으로 항상 명시하게 한다. (PATCH라면 version 필수 — 이 클라이언트는 PUT만 쓴다)
+  heroMediaId: number | null;
+  albumId: number | null;
 }
 
 export async function listDepartmentsAdmin(): Promise<DepartmentCardResponse[]> {

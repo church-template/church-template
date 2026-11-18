@@ -27,6 +27,18 @@ describe("MediaPicker", () => {
     await waitFor(() => expect(screen.getByText("a.pdf")).toBeDefined());
     fireEvent.click(screen.getByText("a.pdf"));
     fireEvent.click(screen.getByRole("button", { name: /선택/ }));
-    expect(onConfirm).toHaveBeenCalledWith([3]);
+    expect(onConfirm).toHaveBeenCalledWith([3], [expect.objectContaining({ id: 3 })]);
+  });
+
+  it("서명 url이 있으면 썸네일을 그 주소로 최적화 없이 그리고, 확정 시 항목(url 포함)을 넘긴다", async () => {
+    const item = { id: 5, filename: "p.jpg", mimeType: "image/jpeg", size: 1, uploadedBy: 1, createdAt: "", url: "/api/media/5?exp=1&sig=x" };
+    listMediaMock.mockResolvedValue({ content: [item], page: { size: 20, number: 0, totalElements: 1, totalPages: 1 } });
+    const onConfirm = vi.fn();
+    renderQc(<MediaPicker open accept="image" onOpenChange={() => {}} onConfirm={onConfirm} />);
+    const img = await screen.findByAltText("p.jpg");
+    expect(img.getAttribute("src")).toBe("/api/media/5?exp=1&sig=x"); // unoptimized → /_next/image 미경유
+    fireEvent.click(img);
+    fireEvent.click(screen.getByRole("button", { name: /선택/ }));
+    expect(onConfirm).toHaveBeenCalledWith([5], [item]);
   });
 });

@@ -4,6 +4,7 @@ import { Container } from "@/components/shell/Container";
 import { EmptyState } from "@/components/common/EmptyState";
 import { MinistryShowcase } from "@/components/departments/MinistryShowcase";
 import { DEPARTMENTS, DEPT_PAGE } from "@/constants/departments";
+import { withListHeroMedia } from "@/lib/api/departments";
 import { CHURCH_NAME } from "@/constants/church";
 import { typo } from "@/constants/typography";
 import { cn } from "@/lib/utils";
@@ -15,7 +16,9 @@ export const metadata: Metadata = {
 };
 
 // 사역(부서) 목록 — 스크롤 고정 쇼케이스(ministry-showcase). 프론트 상수 구동(메인처럼 자립) → 정적 생성.
-export default function DepartmentsPage() {
+// backendId가 연결된 부서만 대표 사진을 API(heroMediaId)에서 읽는다(ISR 60초 + departments 태그).
+export default async function DepartmentsPage() {
+  const departments = await withListHeroMedia(DEPARTMENTS);
   return (
     <SiteShell>
       <Container as="section" className="py-section">
@@ -28,10 +31,10 @@ export default function DepartmentsPage() {
           ))}
         </h1>
         <p className={cn(typo.bodyMd, "mt-base break-keep text-body")}>{DEPT_PAGE.lead}</p>
-        {DEPARTMENTS.length === 0 ? (
+        {departments.length === 0 ? (
           <EmptyState message={DEPT_PAGE.empty} className="mt-lg" />
         ) : (
-          <MinistryShowcase departments={DEPARTMENTS} />
+          <MinistryShowcase departments={departments} />
         )}
       </Container>
     </SiteShell>

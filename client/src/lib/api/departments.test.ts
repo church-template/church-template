@@ -1,5 +1,13 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { getDepartments, getDepartment, buildDepartmentTree, bySortOrder } from "./departments";
+import {
+  getDepartments,
+  getDepartment,
+  buildDepartmentTree,
+  bySortOrder,
+  getDepartmentOverrides,
+  withListHeroMedia,
+} from "./departments";
+import { DEPARTMENTS, type Department } from "@/constants/departments";
 import type { DepartmentCardResponse } from "./types";
 
 afterEach(() => vi.unstubAllGlobals());
@@ -11,11 +19,11 @@ const card = (over: Partial<DepartmentCardResponse>): DepartmentCardResponse => 
 });
 
 describe("getDepartments", () => {
-  it("'/api/departments'를 revalidate 60으로 호출한다", async () => {
+  it("'/api/departments'를 revalidate 60 + departments 태그로 호출한다", async () => {
     const spy = vi.fn(async () => okJson([]));
     vi.stubGlobal("fetch", spy);
     await getDepartments();
-    expect(spy).toHaveBeenCalledWith("/api/departments", { next: { revalidate: 60 } });
+    expect(spy).toHaveBeenCalledWith("/api/departments", { next: { revalidate: 60, tags: ["departments"] } });
   });
 
   it("null 응답은 빈 배열로 방어한다", async () => {
@@ -74,5 +82,64 @@ describe("buildDepartmentTree", () => {
   it("bySortOrder는 sortOrder 후 id로 비교한다", () => {
     expect(bySortOrder(card({ id: 2, sortOrder: 1 }), card({ id: 1, sortOrder: 1 }))).toBeGreaterThan(0);
     expect(bySortOrder(card({ id: 1, sortOrder: 1 }), card({ id: 9, sortOrder: 2 }))).toBeLessThan(0);
+  });
+});
+
+describe("부서 사진·소개 덮어쓰기(church-backend#92)", () => {
+  const student = DEPARTMENTS.find((d) => d.slug === "student")!;
+  const linked: Department = { ...student, backendId: 7 };
+  const detail = (over: Record<string, unknown>) =>
+    okJson({ ...card({ id: 7 }), description: "", createdAt: "", updatedAt: "", version: 1, ...over });
+
+  it("은샘 상수는 아직 백엔드 id가 없다(운영 부서 미등록)", () => {
+    const all = DEPARTMENTS.flatMap((d) => [d, ...(d.children ?? [])]);
+    expect(all.every((d) => d.backendId === undefined)).toBe(true);
+  });
+
+  it("backendId가 없으면 fetch 없이 빈 덮어쓰기", async () => {
+    const spy = vi.fn();
+    vi.stubGlobal("fetch", spy);
+    expect(await getDepartmentOverrides(student)).toEqual({});
+    expect(await withListHeroMedia(DEPARTMENTS)).toBe(DEPARTMENTS);
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it("API 값이 있으면 대표 사진·활동 사진·소개를 채운다", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () =>
+      detail({ heroMediaId: 11, albumId: 3, photos: [21, 22], description: "**소개**" }),
+    ));
+    expect(await getDepartmentOverrides(linked)).toEqual({
+      media: { type: "image", src: "/api/media/11", alt: "학생부" },
+      gallery: [
+        { src: "/api/media/21", alt: "학생부 활동 사진 1" },
+        { src: "/api/media/22", alt: "학생부 활동 사진 2" },
+      ],
+      introMarkdown: "**소개**",
+    });
+  });
+
+  it("칸이 없거나(백엔드 미반영) 비면 덮어쓰지 않는다", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => detail({ description: "  " })));
+    expect(await getDepartmentOverrides(linked)).toEqual({});
+    vi.stubGlobal("fetch", vi.fn(async () => detail({ heroMediaId: null, albumId: null, photos: [] })));
+    expect(await getDepartmentOverrides(linked)).toEqual({}); // 앨범 삭제 시 계약: albumId null + photos []
+  });
+
+  it("조회 실패·404면 상수로 대체한다", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 500 }) as Response));
+    expect(await getDepartmentOverrides(linked)).toEqual({});
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 404 }) as Response));
+    expect(await getDepartmentOverrides(linked)).toEqual({});
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 500 }) as Response));
+    const list = [linked];
+    expect(await withListHeroMedia(list)).toBe(list);
+  });
+
+  it("목록은 연결된 부서 중 heroMediaId가 있는 것만 바꾼다", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => okJson([card({ id: 7, heroMediaId: 11 }), card({ id: 8 })])));
+    const youth = { ...DEPARTMENTS[1], backendId: 8 };
+    const [a, b] = await withListHeroMedia([linked, youth]);
+    expect(a.media).toEqual({ type: "image", src: "/api/media/11", alt: "학생부" });
+    expect(b).toBe(youth);
   });
 });

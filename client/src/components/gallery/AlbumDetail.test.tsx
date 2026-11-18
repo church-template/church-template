@@ -14,7 +14,9 @@ vi.mock("./PhotoGrid", () => ({ PhotoGrid: () => "PHOTOGRID" }));
 // AlbumDetailActions(useRouter·RequirePermission 포함) 무력화 — 권한 게이트 동작은 GalleryAdminActions.test에서 검증.
 vi.mock("./GalleryAdminActions", () => ({ AlbumDetailActions: () => null, AlbumListAction: () => null }));
 vi.mock("@/components/common/MarkdownContent", () => ({
-  MarkdownContent: ({ source }: { source: string }) => <div>{source}</div>,
+  MarkdownContent: ({ source, mediaUrls }: { source: string; mediaUrls?: Record<string, string> }) => (
+    <div data-media-urls={JSON.stringify(mediaUrls ?? null)}>{source}</div>
+  ),
 }));
 
 import { AlbumDetail } from "./AlbumDetail";
@@ -58,5 +60,12 @@ describe("AlbumDetail", () => {
     render(<AlbumDetail id={5} />);
     expect(screen.queryByText("본문 마크다운")).toBeNull();
     expect(screen.getByText("PHOTOGRID")).toBeDefined();
+  });
+
+  it("설명 본문에 응답의 mediaUrls(서명 경로)를 넘긴다", () => {
+    const mediaUrls = { "10": "/api/media/10?exp=1&sig=a" };
+    useAlbumMock.mockReturnValue(detailState({ data: { ...album, mediaUrls } }));
+    render(<AlbumDetail id={5} />);
+    expect(screen.getByText("본문 마크다운").getAttribute("data-media-urls")).toBe(JSON.stringify(mediaUrls));
   });
 });

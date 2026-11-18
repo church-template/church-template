@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import { apiUrl } from "@/lib/auth/apiBase";
+import { mediaSrc } from "@/lib/mediaUrl";
 import { EmptyState } from "@/components/common/EmptyState";
 import { PhotoLightbox } from "./PhotoLightbox";
 import { AddPhotosButton, RemovePhotoButton } from "./GalleryPhotoManager";
@@ -42,8 +42,10 @@ export function PhotoGrid({
               >
                 {/* fill 모드는 부모 relative 필수(next/image 규약) */}
                 <span className="relative block aspect-square overflow-hidden rounded-md">
+                  {/* 서명 주소는 next/image 최적화 불가(remotePatterns의 URL 패턴이 쿼리스트링을 막고, 31일 최적화 캐시가 만료 뒤에도 내줄 수 있음) → unoptimized */}
                   <Image
-                    src={apiUrl(`/api/media/${p.mediaId}`)}
+                    src={mediaSrc(p.mediaId, p.url)}
+                    unoptimized={p.url !== undefined}
                     alt={p.caption ?? ""}
                     fill
                     sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
