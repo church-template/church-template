@@ -76,7 +76,7 @@ export default async function DepartmentDetailPage({
         <DeptHero title={dept.name} caption={caption} media={media} />
         {dept.backendId != null ? (
           <Container className="flex justify-end pt-base">
-            <DeptEditAction backendId={dept.backendId} />
+            <DeptEditAction backendId={dept.backendId} slug={dept.slug} />
           </Container>
         ) : null}
         <Container as="section" className="py-section">

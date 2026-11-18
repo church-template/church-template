@@ -344,6 +344,19 @@ export function findDepartment(
   return undefined;
 }
 
+// 백엔드 부서 번호로 공개 부서 상수 조회(하위까지). 관리 화면 미리보기가 공개 페이지와 같은 이름·기본 사진을 쓰게 한다.
+export function findDepartmentByBackendId(
+  id: number,
+  list: Department[] = DEPARTMENTS,
+): Department | undefined {
+  for (const d of list) {
+    if (d.backendId === id) return d;
+    const found = findDepartmentByBackendId(id, d.children ?? []);
+    if (found) return found;
+  }
+  return undefined;
+}
+
 // 모든 부서 slug(하위 포함) — generateStaticParams·검증에서 사용.
 export function allDepartmentSlugs(list: Department[] = DEPARTMENTS): string[] {
   return list.flatMap((d) => [d.slug, ...allDepartmentSlugs(d.children ?? [])]);

@@ -24,8 +24,8 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           aria-describedby={error ? errorId : undefined}
           className={cn(
             typo.bodyMd,
-            "w-full resize-y rounded-md border border-hairline bg-canvas px-4 py-3 text-ink outline-hidden placeholder:text-muted",
-            "transition duration-150 ease-out hover:border-muted-soft",
+            "w-full resize-y rounded-md border border-muted-soft bg-canvas px-4 py-3 text-ink outline-hidden placeholder:text-muted",
+            "transition duration-150 ease-out hover:border-muted",
             "focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary",
             "disabled:cursor-not-allowed disabled:bg-surface-soft disabled:text-muted",
             error &&

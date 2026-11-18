@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { typo } from "@/constants/typography";
-import { Button } from "@/components/ui/Button";
+import { Button, buttonVariants } from "@/components/ui/Button";
 import { DeleteConfirmDialog } from "@/components/admin/DeleteConfirmDialog";
 import { adminOnError } from "@/lib/admin/mutationHandlers";
 import { notify } from "@/lib/notify";
@@ -14,11 +16,14 @@ import { buildDepartmentTree } from "@/lib/api/departments";
 import { listDepartmentsAdmin, deleteDepartment } from "@/lib/api/departments.admin";
 import { collectCollapsibleIds } from "./treeUtils";
 import { DepartmentTree } from "./DepartmentTree";
-import { DepartmentFormDialog } from "./DepartmentFormDialog";
 import type { DepartmentNode } from "@/lib/api/types";
+
+// 등록·수정은 전용 페이지(#33). 트리의 ＋하위·수정 버튼은 그 페이지로 보낸다.
+const MANAGE_PATH = "/mypage/manage/departments";
 
 export function DepartmentManager() {
   const qc = useQueryClient();
+  const router = useRouter();
   const { data: departments = [], isLoading, isError, error } = useQuery({
     queryKey: adminKeys.list("departments"),
     queryFn: listDepartmentsAdmin,
@@ -31,8 +36,6 @@ export function DepartmentManager() {
   }, [isError, error]);
 
   const [collapsed, setCollapsed] = useState<Set<number>>(new Set()); // 기본 전체 펼침
-  const [createParentId, setCreateParentId] = useState<number | null | undefined>(undefined); // undefined=닫힘
-  const [editId, setEditId] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DepartmentNode | null>(null);
 
   const remove = useMutation({
@@ -70,7 +73,7 @@ export function DepartmentManager() {
             <Button type="button" variant="tertiary" onClick={() => setCollapsed(new Set())}>전체 펼치기</Button>
             <Button type="button" variant="tertiary" onClick={() => setCollapsed(collectCollapsibleIds(roots))}>전체 접기</Button>
           </div>
-          <Button type="button" variant="primary" onClick={() => setCreateParentId(null)}>새 부서</Button>
+          <Link href={`${MANAGE_PATH}/new`} className={buttonVariants("primary")}>새 부서</Link>
         </div>
 
         <div className="mt-base">
@@ -85,28 +88,14 @@ export function DepartmentManager() {
               roots={roots}
               collapsed={collapsed}
               onToggle={toggle}
-              onCreateChild={(parentId) => setCreateParentId(parentId)}
-              onEdit={(id) => setEditId(id)}
+              onCreateChild={(parentId) => router.push(`${MANAGE_PATH}/new?parentId=${parentId}`)}
+              onEdit={(id) => router.push(`${MANAGE_PATH}/${id}/edit`)}
               onDelete={(node) => setDeleteTarget(node)}
             />
           )}
         </div>
       </div>
 
-      <DepartmentFormDialog
-        open={createParentId !== undefined}
-        onOpenChange={(v) => { if (!v) setCreateParentId(undefined); }}
-        mode="create"
-        defaultParentId={createParentId ?? null}
-        departments={departments}
-      />
-      <DepartmentFormDialog
-        open={editId != null}
-        onOpenChange={(v) => { if (!v) setEditId(null); }}
-        mode="edit"
-        editId={editId ?? undefined}
-        departments={departments}
-      />
       <DeleteConfirmDialog
         open={deleteTarget != null}
         onOpenChange={(v) => { if (!v) setDeleteTarget(null); }}
