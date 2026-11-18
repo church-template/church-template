@@ -601,7 +601,7 @@ portal로 뜨는 동작 컴포넌트(Modal·Sheet·Popover·Select·Dropdown·To
   `{colors.hairline}`, `{rounded.full}`. 장식 요소라 `aria-hidden` + sr-only 단계 텍스트 병행.
 
 ### 폼
-- **`text-input`**: 12px 라운드, 포커스 시 보더 2px `{colors.primary}`.
+- **`text-input`**: 12px 라운드, 기본 보더 1px `{colors.muted-soft}`(hover `{colors.muted}` — hairline은 흰 바탕에서 빈 칸이 칸으로 안 보인다, #33), 포커스 시 보더 2px `{colors.primary}`. `Textarea`도 같다.
 - **`password-input`**: 비밀번호 입력 변형. `text-input`을 그대로 감싸고 우측에 표시/숨기기 토글
   (lucide `Eye`/`EyeOff`, 20px·`currentColor`, `{colors.muted}`→`{colors.ink}` hover)을 오버레이한다.
   토글로 `type=password ↔ text` 전환, 버튼은 `aria-label`·`aria-pressed` 제공. 토큰·라운드는 상속.
@@ -653,6 +653,16 @@ portal로 뜨는 동작 컴포넌트(Modal·Sheet·Popover·Select·Dropdown·To
 <!-- admin:02 콘텐츠(설교·공지) — markdown-editor · tag-multiselect · admin-inline-action -->
 - **`challenge-rows`**: 챌린지 목록(#178, 2열 카드 대체). 피처 카드 아래 2px ink 룰 + 헤어라인 줄, 행 전체 상세 링크 = 기간(시작 / ~ 끝 두 줄) `{typography.datetime}` muted |
   상태 Badge(진행 중만 primary) + 제목 `{typography.title-md}`(hover primary) + 범위·총 장 수 `{typography.body-sm}` | 하루 N장 `{typography.body-sm}`(≥48rem 4칸).
+- **`edit-page-shell`**: 긴 관리 등록·수정 화면의 공통 틀(#33). 머리 = 돌아가기 링크(lucide `ArrowLeft` + `{typography.button}` `{colors.body}`, 48px) + 제목 `{typography.display-lg}`(h1).
+  ≥64rem 입력 7 : 미리보기 5(12열). 입력 칼럼은 `--container-narrow`(42rem)까지. 미리보기 = `<aside>` sticky(top `{spacing.lg}`), 높이는 자기 윗변부터 저장 막대 윗변까지(JS 측정) 안에서만 스크롤, 제목 `{typography.title-md}` + 2px `{colors.ink}` 룰(칸 안 sticky).
+  **입력이 주 작업이라 왼쪽 위, 결과 확인은 오른쪽, 저장은 오른쪽 아래**(시선 흐름 왼쪽 위 → 오른쪽 아래). 미리보기는 공개 화면에서 **실제로 바뀌는 구역만** 그린다(바뀌지 않는 칸을 바뀐 것처럼 보이지 않게).
+  저장 막대 = 화면 아래 sticky, 1px hairline 위 경계, 80px. 상태 문구 `{typography.caption}` `{colors.body}`("저장하지 않은 변경이 있습니다.", 바꾼 게 있을 때만) | `취소`(button-secondary) `저장`(button-primary — 화면의 유일한 파란 버튼).
+  <64rem은 미리보기 칸을 숨기고 저장 막대에 `미리보기`(button-secondary + lucide `Eye`) → 아래 시트(Sheet bottom, 최대 88%, 위 모서리 `{rounded.xl}`). <40rem 저장 막대 두 줄(상태 문구 / [미리보기] ··· [취소][저장]).
+- **`form-section`**: 등록·수정 폼의 구역. 제목 `{typography.title-md}`(h2) + 아래 2px `{colors.ink}` 룰, 선택 리드 `{typography.body-sm}` `{colors.body}`, 구역 간 `{spacing.xxl}`, 칸 간 `{spacing.lg}`.
+- **`form-field`**: 라벨 `{typography.body-sm}` 600 ink + `(필수)`/`(선택)` 400 `{colors.muted}`. 설명은 **입력칸 아래** `{typography.caption}` `{colors.body}` — 나란한 두 칸(≥40rem 2열)에서 한쪽에만 설명이 있어도 라벨·입력칸 높이가 맞는다.
+- **`changed-badge`**: 미리보기에서 바뀐 구역 제목 옆 `Badge` primary-soft "바뀜".
+- **`dept-album-field`**: 부서 수정의 활동 사진 앨범 칸(인라인 생성). 앨범이 없으면 점선(`{colors.muted-soft}`) `{rounded.md}` 빈 상태 안내 + `새 앨범 만들기`(button-secondary + `Plus`) → 이름 하나만 받는 Dialog("만들고 연결", 만들면 바로 선택). 있으면 select + `새 앨범 만들기`(tertiary) + 연결 카드(hairline `{rounded.md}`: 썸네일 최대 4장 `{rounded.sm}` · `사진 N장` · `사진 넣기`(`ImagePlus`, media-picker) · `앨범 열기`(`ExternalLink`, 새 탭)) + 공개 안내(lucide `Globe` + `{typography.body-sm}` ink). 만들기·사진 넣기는 `GALLERY_WRITE`가 있을 때만.
+- **`dept-edit-preview`**: 부서 수정 미리보기. 공개 부서 페이지가 API로 바꾸는 구역만 — 대표 사진(16:9 `{rounded.xl}` + 하단 스크림 + 상수 부서명 `{typography.display-sm}` on-dark), 소개(4줄, 비면 상수 `description`), 활동 사진(`{colors.surface-soft}` `{rounded.xl}` 밴드 안 정사각 4열 격자, `dept-gallery`와 같은 규칙 — 앨범 사진이 없으면 상수 기본 사진 + 그렇다는 안내 한 줄). 구역이 안 보이는 경우는 점선 칸에 이유를 쓴다. 공개 페이지가 없는(`backendId` 미연결) 부서는 안내 한 줄.
 - **`markdown-editor`**: 어드민 본문 작성/미리보기 탭 에디터. `Tabs`(작성·미리보기) + `Textarea` + `MarkdownContent`(미리보기 재사용). 미리보기는 탭 활성 시에만 변환. 작성 탭 상단에 `markdown-toolbar` 장착 — 마크다운을 몰라도 버튼으로 서식 적용. 토큰 공유(가독성 우선 단순 변형).
 - **`markdown-toolbar`**: 서식 버튼줄(`role="toolbar"`, lucide 아이콘 + `aria-label`·`title`). 제목 3단계·굵게·기울임·취소선·목록·번호목록·인용·구분선은 선택 영역 토글(순수 로직 `lib/markdownEditing`), 링크·유튜브·표(열 1~8·행 1~20 크기 지정, `buildTable`)는 입력 Dialog(검증 실패 인라인 에러, `InsertDialogShell` 공용 뼈대), 이미지는 `media-picker`(image·multi) 재사용 → `media:{id}` 단독 문단 자동 삽입. `CircleHelp` 버튼 → 치트시트 Dialog("이렇게 쓰면 → 이렇게 보입니다", `MarkdownContent` 재사용 + 문단·유튜브·이미지 규칙 안내). 직접 버튼 삽입은 execCommand 우선(Ctrl+Z 보존)·상태 교체 폴백, **Dialog 삽입은 상태 교체 직행**(열린 Dialog의 포커스 트랩이 execCommand를 가로채 본문이 갱신되지 않는 실브라우저 버그 방지). 본문 표는 `prose-church` table 스타일(hairline 보더·surface-soft 헤더)로 렌더.
 - **`tag-multiselect`**: 기존 태그 다중선택. 인라인 칩 토글 — 태그 전체를 폼 안에 항상 펼쳐 렌더(`aria-pressed` 버튼), 선택=primary 채움+lucide `Check`, 비선택=surface-strong. 플로팅(Popover) 미사용 — 모달(Dialog) 안에서도 레이어 문제 없음. 옵션은 `getTags`. 신규 생성 없음(06 소관).

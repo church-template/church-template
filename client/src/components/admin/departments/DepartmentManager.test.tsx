@@ -18,6 +18,8 @@ vi.mock("@/lib/api/departments.admin", () => ({
   updateDepartment: updateMock,
 }));
 vi.mock("@/lib/notify", () => ({ notify: { success: notifySuccess, error: vi.fn() } }));
+const pushMock = vi.hoisted(() => vi.fn());
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: pushMock }) }));
 
 import { DepartmentManager } from "./DepartmentManager";
 
@@ -67,20 +69,27 @@ describe("DepartmentManager (접이식 트리)", () => {
     await waitFor(() => expect(screen.queryByText("1학년부")).toBeNull());
   });
 
-  it("새 부서는 상위 (없음)으로 create 다이얼로그를 연다", async () => {
+  it("새 부서는 등록 페이지 링크다", async () => {
     listMock.mockResolvedValue(flat);
     renderManager();
     await waitFor(() => expect(screen.getByText("중등부")).toBeDefined());
-    fireEvent.click(screen.getByRole("button", { name: "새 부서" }));
-    await waitFor(() => expect((screen.getByLabelText("상위 부서") as HTMLSelectElement).value).toBe(""));
+    expect(screen.getByRole("link", { name: "새 부서" }).getAttribute("href")).toBe("/mypage/manage/departments/new");
   });
 
-  it("노드 ＋하위는 그 부모 id로 프리셋한다", async () => {
+  it("노드 ＋하위는 그 부모 id로 등록 페이지에 간다", async () => {
     listMock.mockResolvedValue(flat);
     renderManager();
     await waitFor(() => expect(screen.getByText("중등부")).toBeDefined());
     fireEvent.click(screen.getByRole("button", { name: "중등부 하위 추가" }));
-    await waitFor(() => expect((screen.getByLabelText("상위 부서") as HTMLSelectElement).value).toBe("2"));
+    expect(pushMock).toHaveBeenCalledWith("/mypage/manage/departments/new?parentId=2");
+  });
+
+  it("노드 수정은 그 부서 수정 페이지로 간다", async () => {
+    listMock.mockResolvedValue(flat);
+    renderManager();
+    await waitFor(() => expect(screen.getByText("중등부")).toBeDefined());
+    fireEvent.click(screen.getByRole("button", { name: "중등부 수정" }));
+    expect(pushMock).toHaveBeenCalledWith("/mypage/manage/departments/2/edit");
   });
 
   it("노드 삭제 확인 후 deleteDepartment를 호출한다", async () => {
