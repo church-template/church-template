@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import type { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
+import { todayKstDate } from "@/lib/date";
 import { typo } from "@/constants/typography";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/Input";
@@ -62,7 +63,7 @@ export function ChallengeFormDialog({ open, onOpenChange, mode, editId }: Challe
   useEffect(() => {
     if (!open) return;
     setBanner(undefined);
-    if (mode === "create") reset(EMPTY);
+    if (mode === "create") reset({ ...EMPTY, startDate: todayKstDate() }); // 열 때마다 오늘(KST)
     else if (detail.data) {
       const d = detail.data;
       reset({

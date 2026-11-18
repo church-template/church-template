@@ -15,7 +15,7 @@ import { TagMultiSelect } from "@/components/admin/TagMultiSelect";
 import { adminOnError } from "@/lib/admin/mutationHandlers";
 import { notify } from "@/lib/notify";
 import { revalidateEvents } from "@/lib/admin/revalidate";
-import { toServerDateTime, toLocalInput } from "@/lib/date";
+import { toServerDateTime, toLocalInput, nowKstDateTime } from "@/lib/date";
 import { cn } from "@/lib/utils";
 import { typo } from "@/constants/typography";
 import {
@@ -62,7 +62,8 @@ export function EventForm({ mode, initial }: EventFormProps) {
     resolver: zodResolver(eventSchema),
     defaultValues: {
       title: initial?.title ?? "",
-      startAt: toLocalInput(initial?.startAt ?? "", initial?.allDay ?? false),
+      // 새 일정은 시작을 지금(KST)으로 시작(수정은 저장값). 종료는 선택이라 비워 둔다.
+      startAt: initial ? toLocalInput(initial.startAt, initial.allDay) : nowKstDateTime(),
       endAt: toLocalInput(initial?.endAt ?? "", initial?.allDay ?? false),
       allDay: initial?.allDay ?? false,
       location: initial?.location ?? "",

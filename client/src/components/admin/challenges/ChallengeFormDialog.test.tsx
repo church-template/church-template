@@ -34,6 +34,17 @@ const renderDialog = (props: Partial<Parameters<typeof ChallengeFormDialog>[0]> 
   );
 
 describe("ChallengeFormDialog", () => {
+  it("새 챌린지는 시작일이 오늘(KST)로 채워져 열린다", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-07-19T05:07:00Z")); // = 2026-07-19 KST
+    try {
+      renderDialog();
+      await waitFor(() => expect((screen.getByLabelText("시작일") as HTMLInputElement).value).toBe("2026-07-19"));
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("신약 프리셋 클릭 → 범위 40~66 + 미리보기(총 260장)", async () => {
     renderDialog();
     fireEvent.click(screen.getByRole("button", { name: "신약" }));
