@@ -122,7 +122,8 @@ export function ChallengeFormDialog({ open, onOpenChange, mode, editId }: Challe
   const total = wStart >= 1 && wEnd <= 66 && wStart <= wEnd ? chapterCount(Number(wStart), Number(wEnd)) : null;
   const days = Number(wDays);
   const preview =
-    total != null && Number.isInteger(days) && days >= 1
+    // 상한(3650)도 걸어야 한다 — 시작일이 채워진 상태에서 큰 수를 치면 종료일 계산이 날짜 범위를 넘어 렌더가 깨진다
+    total != null && Number.isInteger(days) && days >= 1 && days <= 3650
       ? `총 ${total}장 · 하루 ${dailyGoalOf(total, days)}장${wDate ? ` · ${challengeEndDate(wDate, days)} 종료` : ""}`
       : null;
 
