@@ -1,5 +1,6 @@
 import { apiUrl } from "@/lib/auth/apiBase";
 import type { Page } from "@/lib/page";
+import { throwIfMembersOnly } from "./visibility";
 import type { NoticeCardResponse, NoticeDetailResponse } from "./types";
 
 // 공지 목록 필터(가이드 10장). q는 제목만 매칭. 설교보다 단순(preacher/series/from/to 없음).
@@ -29,7 +30,10 @@ export async function getNotices(
   const res = await fetch(apiUrl(`/api/notices${buildNoticeQuery(p)}`), {
     next: { revalidate: 60, tags: ["notices"] },
   });
-  if (!res.ok) throw new Error(`GET /api/notices 실패: ${res.status}`);
+  if (!res.ok) {
+    await throwIfMembersOnly(res); // 401/403 = 교인 전용 신호(낡은 설정) → 페이지가 게이트로 넘긴다
+    throw new Error(`GET /api/notices 실패: ${res.status}`);
+  }
   return (await res.json()) as Page<NoticeCardResponse>;
 }
 
@@ -39,7 +43,10 @@ export async function getNotice(
 ): Promise<NoticeDetailResponse | null> {
   const res = await fetch(apiUrl(`/api/notices/${id}`), { cache: "no-store" });
   if (res.status === 404) return null;
-  if (!res.ok) throw new Error(`GET /api/notices/${id} 실패: ${res.status}`);
+  if (!res.ok) {
+    await throwIfMembersOnly(res); // 401/403 = 교인 전용 신호(낡은 설정) → 페이지가 게이트로 넘긴다
+    throw new Error(`GET /api/notices/${id} 실패: ${res.status}`);
+  }
   return (await res.json()) as NoticeDetailResponse;
 }
 

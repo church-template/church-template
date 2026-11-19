@@ -16,6 +16,11 @@ describe("buildSermonQuery", () => {
       "?page=0&tagId=3&q=grace",
     );
   });
+  it("membersOnly 필터를 쿼리에 싣는다", () => {
+    expect(buildSermonQuery({ membersOnly: true, size: 1 })).toBe("?size=1&membersOnly=true");
+    expect(buildSermonQuery({ membersOnly: false })).toBe("?membersOnly=false");
+    expect(buildSermonQuery({})).toBe(""); // 대조: 미지정이면 칸 없음
+  });
   it("sort의 콤마는 인코딩된다", () => {
     expect(buildSermonQuery({ sort: "preachedAt,desc" })).toBe(
       "?sort=preachedAt%2Cdesc",

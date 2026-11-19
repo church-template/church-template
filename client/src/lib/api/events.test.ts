@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { buildEventQuery, getEvents, getEvent, EVENTS_PAGE_SIZE } from "./events";
+import { isMembersOnlyError } from "./visibility";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -48,5 +49,29 @@ describe("getEvent", () => {
   it("그 외 에러는 throw", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 503 }) as Response));
     await expect(getEvent(5)).rejects.toThrow("GET /api/events/5 실패: 503");
+  });
+});
+
+const errRes = (status: number, errorCode: string) => new Response(JSON.stringify({ errorCode }), { status });
+describe("일정 서버 조회의 교인 전용 신호", () => {
+  it("getEvents가 401 INVALID_TOKEN을 받으면 MembersOnlyError를 던진다", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => errRes(401, "INVALID_TOKEN")));
+    const e = await getEvents({ year: 2026, month: 6 }).catch((x: unknown) => x);
+    expect(isMembersOnlyError(e)).toBe(true);
+  });
+  it("getEvent가 403 ACCESS_DENIED를 받으면 MembersOnlyError를 던진다", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => errRes(403, "ACCESS_DENIED")));
+    const e = await getEvent(5).catch((x: unknown) => x);
+    expect(isMembersOnlyError(e)).toBe(true);
+  });
+  it("대조: 500이면 일반 Error", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => errRes(500, "INTERNAL_ERROR")));
+    const e = await getEvent(5).catch((x: unknown) => x);
+    expect(e).toBeInstanceOf(Error);
+    expect(isMembersOnlyError(e)).toBe(false);
+  });
+  it("대조: getEvent 404는 지금처럼 null", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => errRes(404, "RESOURCE_NOT_FOUND")));
+    expect(await getEvent(5)).toBeNull();
   });
 });

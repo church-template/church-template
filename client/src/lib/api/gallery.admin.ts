@@ -8,11 +8,13 @@ export interface GalleryAlbumCreateRequest {
   title: string;
   description?: string;
   tagIds?: number[];
+  membersOnly?: boolean; // 이 앨범은 교인만 보기
 }
 export interface GalleryAlbumPatchRequest {
   title?: string;
   description?: string;
   tagIds?: number[];
+  membersOnly?: boolean;
   version: number; // 낙관락 — body(가이드 8장, 스펙 §3.2)
 }
 

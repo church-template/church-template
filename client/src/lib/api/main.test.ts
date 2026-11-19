@@ -9,14 +9,15 @@ const okResponse = (body: unknown) =>
   ({ ok: true, json: async () => body }) as Response;
 
 describe("getMain", () => {
-  it("'/api/main'을 revalidate 60으로 호출한다", async () => {
+  it("'/api/main'을 revalidate 60·main 태그로 호출한다", async () => {
     const spy = vi.fn(async () =>
       okResponse({ sermons: [], notices: [], upcomingEvents: [] }),
     );
     vi.stubGlobal("fetch", spy);
     await getMain();
     // 테스트 환경은 NEXT_PUBLIC_API_BASE 미설정 → apiUrl이 path만 반환(apiBase.ts 계약)
-    expect(spy).toHaveBeenCalledWith("/api/main", { next: { revalidate: 60 } });
+    // main 태그: 공개 범위·설교 교인만 변경 직후 홈 캐시를 지우는 연결점(revalidateMain·revalidateVisibility)
+    expect(spy).toHaveBeenCalledWith("/api/main", { next: { revalidate: 60, tags: ["main"] } });
   });
 
   it("배열 누락은 빈 배열로 방어한다", async () => {

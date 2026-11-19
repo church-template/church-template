@@ -10,6 +10,14 @@
 // 3. 이 파일에는 공개 GET 응답 타입만 둔다.
 // ─────────────────────────────────────────────────────────────────────────────
 
+// 메뉴별 공개 범위(GET /api/visibility). 누구나 = PUBLIC, 교인만 = MEMBERS.
+export type VisibilityLevel = "PUBLIC" | "MEMBERS";
+export type VisibilityMenu = "notices" | "events" | "bulletins" | "sermons" | "gallery";
+export type VisibilityResponse = Record<VisibilityMenu, VisibilityLevel>;
+
+// 아래 공개 범위 칸(membersOnly·departmentLinked·mediaUrls·url·카드 version)은 모두 optional —
+// 구 백엔드 응답(칸 없음)을 thumbnailUrl? 관례대로 "없음 = false / 무서명 주소"로 다룬다.
+
 export interface TagResponse {
   id: number;
   name: string;
@@ -25,6 +33,8 @@ export interface SermonCardResponse {
   viewCount: number;
   tags: TagResponse[];
   author?: string | null;
+  membersOnly?: boolean; // 글 단위 교인만
+  version?: number; // 목록에서 바로 교인만 전환(PATCH 낙관락)
 }
 
 export interface NoticeCardResponse {
@@ -88,6 +98,7 @@ export interface NoticeDetailResponse {
   version: number; // 낙관적 락
   tags: TagResponse[];
   author?: string | null; // 서버 마스킹 적용
+  mediaUrls?: Record<string, string>; // 본문 media:{id} → 서명 주소(앨범 상세와 같은 모양)
 }
 
 // 상세 응답 — 카드 메타 + 본문·외부링크·낙관적 락(가이드 10장, OpenAPI SermonDetailResponse).
@@ -107,6 +118,8 @@ export interface SermonDetailResponse {
   version: number;
   tags: TagResponse[];
   author?: string | null; // 서버 마스킹 적용
+  membersOnly?: boolean;
+  mediaUrls?: Record<string, string>;
 }
 
 // 일정 상세 — 카드 메타 + description·수정일·낙관적 락(OpenAPI EventDetailResponse).
@@ -124,6 +137,7 @@ export interface EventDetailResponse {
   updatedAt: string;
   version: number; // 낙관적 락 (표시엔 미사용, 어드민 대비)
   tags: TagResponse[];
+  mediaUrls?: Record<string, string>;
 }
 
 // 주보 카드 — 본문 없음, PDF는 mediaId FK(가이드 10장, OpenAPI BulletinCardResponse).
@@ -134,6 +148,7 @@ export interface BulletinCardResponse {
   mediaId: number;
   createdAt: string; // LocalDateTime
   author?: string | null; // 서버 마스킹 적용(가이드 7장) — 그대로 표기
+  url?: string | null; // PDF 서명 주소. null(PDF 없음, 백엔드 DTO)·칸 없음(구 백엔드)이면 mediaId로 조립
 }
 
 // 주보 상세(공개 GET /api/bulletins/{id}) — 어드민 수정 시 낙관락 version 시드에 사용(스펙 §3.3·§5.3).
@@ -146,9 +161,10 @@ export interface BulletinDetailResponse {
   createdAt: string; // LocalDateTime
   updatedAt: string;
   version: number; // 낙관락
+  url?: string | null; // PDF 서명 주소(PDF 없으면 null)
 }
 
-// 갤러리(회원전용, GALLERY_VIEW) — OpenAPI Gallery*Response. 다른 Response와 달리 authFetch로만 조회.
+// 갤러리(공개 범위 설정을 따름 — 교인만이면 GALLERY_VIEW) — OpenAPI Gallery*Response. 다른 Response와 달리 authFetch로만 조회.
 // nullable(?)은 OpenAPI 명시가 아니라 도메인 규약(가이드 6.5 author 보유)·types.ts 관행 기반 해석.
 export interface GalleryAlbumCardResponse {
   id: number;
@@ -160,6 +176,9 @@ export interface GalleryAlbumCardResponse {
   createdAt: string; // offset 없는 LocalDateTime — parseServerDate/formatDate로 표기
   tags: TagResponse[];
   author?: string | null;
+  membersOnly?: boolean;
+  departmentLinked?: boolean; // 부서 소개에 연결된 앨범은 교인만으로 바꿀 수 없다
+  version?: number; // 목록에서 바로 교인만 전환(PATCH 낙관락)
 }
 
 export interface GalleryPhotoResponse {
@@ -183,6 +202,8 @@ export interface GalleryAlbumDetailResponse {
   // 설명 본문 media:{id} → 서명 경로(church-backend#92 확정: 키=미디어 id 문자열, 열 수 없는 id는 키 없음).
   // 칸이 없으면(구 백엔드) 무서명 주소로 대체한다.
   mediaUrls?: Record<string, string>;
+  membersOnly?: boolean;
+  departmentLinked?: boolean;
 }
 
 export interface PositionResponse {

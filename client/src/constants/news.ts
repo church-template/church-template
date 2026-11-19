@@ -9,4 +9,10 @@ export const NEWS_LIST = {
   bulletinFeaturedLatest: "최근 주보",
   bulletinCta: "주보 보기",
   pdfHint: "(새 탭에서 PDF 열림)",
+  eventTitle: "일정",
+  // 교인만 메뉴의 브라우저 조회 상태(#198)
+  loading: "불러오는 중…",
+  noticeLoadError: "공지를 불러오지 못했습니다.",
+  eventLoadError: "일정을 불러오지 못했습니다.",
+  bulletinLoadError: "주보를 불러오지 못했습니다.",
 } as const;

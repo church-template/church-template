@@ -3,11 +3,12 @@
 // category: 허브에서 테마별 섹션으로 묶어 가독성을 높인다(MANAGE_CATEGORIES 순서대로 렌더).
 // desc·Icon: 이름만으로 찾기 어려워 "무엇을 하는 곳인지" 한 줄과 아이콘을 붙인다(고령 가독 — 읽기 전에 알아보게).
 import {
-  BadgeCheck, Bell, BookOpen, BookOpenCheck, Bus, Calendar, FileText, FolderOpen, Images, Inbox,
+  BadgeCheck, Bell, BookOpen, BookOpenCheck, Bus, Calendar, FileText, FolderOpen, Globe, Images, Inbox,
   MessageSquare, Network, Newspaper, ShieldCheck, Tag, Users, type LucideIcon,
 } from "lucide-react";
 import { hasPermission } from "@/lib/auth/permissions";
 import type { MeResponse } from "@/lib/auth/types";
+import { VISIBILITY_COPY, VISIBILITY_SETTINGS_PATH } from "@/constants/visibility";
 
 export type ManageCategory = "inbox" | "content" | "media" | "org" | "governance";
 
@@ -52,6 +53,7 @@ export const MANAGE_DOMAINS: ManageDomain[] = [
   { key: "positions", label: "직분 관리", desc: "집사·권사 같은 직분 이름을 정해요", Icon: BadgeCheck, permission: "POSITION_MANAGE", href: "/mypage/manage/positions", kind: "manage", category: "org" },
   { key: "members", label: "회원 관리", desc: "가입 승인과 회원 정보를 관리해요", Icon: Users, permission: "MEMBER_MANAGE", href: "/mypage/manage/members", kind: "manage", category: "governance" },
   { key: "roles", label: "역할·권한 관리", desc: "누가 무엇을 관리할지 정해요", Icon: ShieldCheck, permission: "ROLE_MANAGE", href: "/mypage/manage/roles", kind: "manage", category: "governance" },
+  { key: "visibility", label: VISIBILITY_COPY.hubLabel, desc: VISIBILITY_COPY.hubDesc, Icon: Globe, permission: "VISIBILITY_MANAGE", href: VISIBILITY_SETTINGS_PATH, kind: "manage", category: "governance" },
 ];
 
 export interface ManageGroup {
