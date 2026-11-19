@@ -1,4 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { useAuthStore } from "@/lib/auth/authStore";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createElement, type ReactNode } from "react";
@@ -50,5 +51,31 @@ describe("useGalleryTags", () => {
     const { result } = renderHook(() => useGalleryTags(), { wrapper });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.[0].name).toBe("수련회");
+  });
+});
+
+// persist 복원 전 익명으로 한 번 받으면 교인 전용 글이 빠진 목록이 잠깐 보인다(게이트 없는 누구나 메뉴).
+describe("persist 복원 대기", () => {
+  afterEach(() => vi.restoreAllMocks());
+  const page = { content: [], page: { size: 12, number: 0, totalElements: 0, totalPages: 0 } };
+
+  it("persist 복원 전에는 앨범 목록·상세를 요청하지 않는다", async () => {
+    vi.spyOn(useAuthStore.persist, "hasHydrated").mockReturnValue(false);
+    fetchAlbumsMock.mockResolvedValue(page);
+    const list = renderHook(() => useAlbums({}), { wrapper });
+    const one = renderHook(() => useAlbum(1), { wrapper });
+    await new Promise((r) => setTimeout(r, 20));
+    expect(fetchAlbumsMock).not.toHaveBeenCalled();
+    expect(fetchAlbumMock).not.toHaveBeenCalled();
+    expect(list.result.current.fetchStatus).toBe("idle");
+    expect(one.result.current.fetchStatus).toBe("idle");
+  });
+
+  it("대조: 복원 뒤에는 요청한다", async () => {
+    vi.spyOn(useAuthStore.persist, "hasHydrated").mockReturnValue(true);
+    fetchAlbumsMock.mockResolvedValue(page);
+    const { result } = renderHook(() => useAlbums({}), { wrapper });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(fetchAlbumsMock).toHaveBeenCalledTimes(1);
   });
 });

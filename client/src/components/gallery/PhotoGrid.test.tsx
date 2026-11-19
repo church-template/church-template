@@ -35,7 +35,13 @@ describe("PhotoGrid", () => {
     );
     const srcs = [...container.querySelectorAll("img")].map((i) => i.getAttribute("src") ?? "");
     expect(srcs[0]).toBe("/api/media/10?exp=1&sig=a");
-    expect(srcs[1]).toContain(encodeURIComponent("/api/media/20")); // 기존 최적화 경유
+    expect(srcs[1]).toBe("/api/media/20"); // 공개 범위가 바뀔 수 있어 최적화하지 않는다(6.6-16)
+  });
+
+  it("사진은 서명 주소가 없어도 최적화하지 않는다", () => {
+    const { container } = render(<PhotoGrid photos={[photos[1]]} albumTitle="앨범" />);
+    const src = container.querySelector("img")?.getAttribute("src") ?? "";
+    expect(src.startsWith("/_next/image")).toBe(false);
   });
 
   it("라이트박스도 서명 url을 쓴다", () => {

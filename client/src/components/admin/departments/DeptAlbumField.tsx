@@ -17,6 +17,7 @@ import { useHasPermission } from "@/lib/auth/useMe";
 import { mediaSrc } from "@/lib/mediaUrl";
 import { notify } from "@/lib/notify";
 import { ACTION } from "@/constants/actionButton";
+import { VISIBILITY_COPY } from "@/constants/visibility";
 
 export interface DeptAlbumFieldProps {
   deptName: string; // 새 앨범 이름 기본값용
@@ -103,8 +104,11 @@ export function DeptAlbumField({ deptName, value, onChange, onPhotosAdded, onCre
               {value !== null && !options.some((a) => a.id === value) ? (
                 <option value={value}>{`현재 앨범 #${value}`}</option>
               ) : null}
+              {/* 교인만 앨범은 부서에 연결할 수 없다 — 부서 소개는 누구에게나 사진을 보인다(스펙 6.2) */}
               {options.map((a) => (
-                <option key={a.id} value={a.id}>{a.title}</option>
+                <option key={a.id} value={a.id} disabled={!!a.membersOnly}>
+                  {a.membersOnly ? `${a.title}${VISIBILITY_COPY.deptOptionSuffix}` : a.title}
+                </option>
               ))}
             </select>
             {createButton}

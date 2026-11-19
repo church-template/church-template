@@ -66,4 +66,12 @@ describe("MediaLibrary", () => {
     expect(link.getAttribute("href")).toBe(signed);
     expect(container.querySelector("img")?.getAttribute("src")).toBe(signed);
   });
+
+  // 스펙 6.6-16: 공개 범위가 바뀔 수 있는 파일은 최적화 캐시(31일, 지울 수 없음)를 거치지 않는다.
+  it("서명 url이 없어도 썸네일을 최적화하지 않는다(무서명 주소 그대로)", async () => {
+    listMediaMock.mockResolvedValue(oneItem);
+    const { container } = renderQc(<MediaLibrary />);
+    await screen.findByRole("link", { name: "a.png 열기" });
+    expect(container.querySelector("img")?.getAttribute("src")).toBe("/api/media/5");
+  });
 });

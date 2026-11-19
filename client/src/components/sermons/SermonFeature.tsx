@@ -4,6 +4,7 @@ import { typo } from "@/constants/typography";
 import { cn } from "@/lib/utils";
 import { SERMON_LIST } from "@/constants/sermons";
 import type { SermonCardResponse } from "@/lib/api/types";
+import { MembersOnlyBadge } from "@/components/visibility/MembersOnlyBadge";
 import { formatLongDate, isWithinWeek } from "./sermonGroups";
 
 const focusRing =
@@ -32,7 +33,10 @@ export function SermonFeature({
       )}
     >
       <div>
-        <p className={cn(typo.captionStrong, "text-primary-on-dark")}>{label}</p>
+        <div className="flex flex-wrap items-center gap-xs">
+          <p className={cn(typo.captionStrong, "text-primary-on-dark")}>{label}</p>
+          {sermon.membersOnly ? <MembersOnlyBadge /> : null}
+        </div>
         {sermon.scripture ? (
           <p className={cn(typo.titleMd, "mt-base text-on-dark-soft")}>{sermon.scripture}</p>
         ) : null}

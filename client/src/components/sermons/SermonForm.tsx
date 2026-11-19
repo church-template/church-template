@@ -6,12 +6,15 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { Checkbox } from "@/components/ui/Checkbox";
 import { ACTION } from "@/constants/actionButton";
 import { SERMON_DEFAULT_PREACHER } from "@/constants/church";
 import { todayKstDate } from "@/lib/date";
 import { MarkdownEditor } from "@/components/admin/MarkdownEditor";
 import { TagMultiSelect } from "@/components/admin/TagMultiSelect";
 import { adminOnError } from "@/lib/admin/mutationHandlers";
+import { revalidateMain } from "@/lib/admin/revalidate";
+import { VISIBILITY_COPY } from "@/constants/visibility";
 import { notify } from "@/lib/notify";
 import { cn } from "@/lib/utils";
 import { typo } from "@/constants/typography";
@@ -45,6 +48,7 @@ function toBody(v: SermonFormValues): SermonCreateRequest {
     videoUrl: opt(v.videoUrl ?? ""),
     audioUrl: opt(v.audioUrl ?? ""),
     tagIds: v.tagIds,
+    membersOnly: v.membersOnly,
   };
 }
 
@@ -70,6 +74,7 @@ export function SermonForm({ mode, initial }: SermonFormProps) {
       videoUrl: initial?.videoUrl ?? "",
       audioUrl: initial?.audioUrl ?? "",
       tagIds: initial?.tags.map((t) => t.id) ?? [],
+      membersOnly: initial?.membersOnly ?? false,
     },
   });
 
@@ -90,10 +95,17 @@ export function SermonForm({ mode, initial }: SermonFormProps) {
       // 409 재편집: 상세 쿼리 무효화 → SermonEditLoader가 최신 version으로 다시 시드한다(AlbumForm 관례).
       onReedit: () => qc.invalidateQueries({ queryKey: initial ? ["sermon", initial.id] : ["sermons"] }),
     }),
-    onSuccess: (res) => {
+    onSuccess: async (res) => {
       // 쓰기 성공 즉시 회원 쿼리 캐시 무효화 → 목록·상세가 fresh 데이터를 받음(회원전용 전환으로 ISR 태그 아님).
       qc.invalidateQueries({ queryKey: ["sermons"] });
       if (mode === "edit" && initial) qc.invalidateQueries({ queryKey: ["sermon", initial.id] });
+      // 홈 설교 목록은 60초 서버 캐시 — 교인만으로 바꾼 설교 제목이 홈에 남지 않게.
+      // 실패해도 저장은 끝났다 → 로그만 남기고 성공 흐름을 잇는다(실패처럼 보이면 다시 저장해 중복 글이 생긴다).
+      try {
+        await revalidateMain();
+      } catch (e) {
+        console.error(e);
+      }
       notify.success(SAVED_NOTICE);
       router.push(`/sermons/${res.id}`);
     },
@@ -135,7 +147,8 @@ export function SermonForm({ mode, initial }: SermonFormProps) {
           control={control}
           name="content"
           render={({ field }) => (
-            <MarkdownEditor value={field.value ?? ""} onChange={field.onChange} id="sermon-content" />
+            // 저장된 본문 이미지는 응답의 서명 주소로 미리 본다(교인만 설교의 무서명 주소는 404, 6.6-14)
+            <MarkdownEditor value={field.value ?? ""} onChange={field.onChange} id="sermon-content" mediaUrls={initial?.mediaUrls} />
           )}
         />
       </div>
@@ -147,6 +160,7 @@ export function SermonForm({ mode, initial }: SermonFormProps) {
           render={({ field }) => <TagMultiSelect value={field.value} onChange={field.onChange} />}
         />
       </div>
+      <Checkbox label={VISIBILITY_COPY.sermonCheckbox} {...register("membersOnly")} />
       <div className="flex gap-sm">
         <Button type="button" variant="tertiary" onClick={() => router.back()}>{ACTION.cancel.label}</Button>
         <Button type="submit" variant="primary" loading={mutation.isPending}>{ACTION.save.label}</Button>

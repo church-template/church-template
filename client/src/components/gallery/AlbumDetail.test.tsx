@@ -19,7 +19,11 @@ vi.mock("@/components/common/MarkdownContent", () => ({
   ),
 }));
 
+vi.mock("next/navigation", () => ({ usePathname: () => "/gallery/albums/5" }));
+
 import { AlbumDetail } from "./AlbumDetail";
+import { ApiError } from "@/lib/auth/apiError";
+const state = (over: Record<string, unknown>) => detailState(over);
 
 function detailState(over: Record<string, unknown>) {
   return { data: undefined, isPending: false, isError: false, refetch: vi.fn(), ...over };
@@ -67,5 +71,43 @@ describe("AlbumDetail", () => {
     useAlbumMock.mockReturnValue(detailState({ data: { ...album, mediaUrls } }));
     render(<AlbumDetail id={5} />);
     expect(screen.getByText("본문 마크다운").getAttribute("data-media-urls")).toBe(JSON.stringify(mediaUrls));
+  });
+});
+
+// 교인 전용 글·낡은 설정: 401/403은 오류가 아니라 MemberGate와 같은 안내(errorCode 분기)
+describe("AlbumDetail 접근 안내", () => {
+  it("401 INVALID_TOKEN이면 로그인 안내와 로그인 링크", () => {
+    useAlbumMock.mockReturnValue(state({ isError: true, error: new ApiError(401, "INVALID_TOKEN", undefined) }));
+    render(<AlbumDetail id={5} />);
+    expect(screen.getByText("로그인 후 이용 가능합니다")).toBeDefined();
+    expect(screen.getByText("갤러리는 교인 전용입니다. 로그인해 주세요.")).toBeDefined();
+    expect(screen.getByRole("link", { name: "로그인" }).getAttribute("href")).toBe("/login?next=%2Fgallery%2Falbums%2F5");
+    expect(screen.queryByRole("button", { name: "다시 시도" })).toBeNull();
+  });
+  it("403 ACCESS_DENIED면 승인 안내", () => {
+    useAlbumMock.mockReturnValue(state({ isError: true, error: new ApiError(403, "ACCESS_DENIED", undefined) }));
+    render(<AlbumDetail id={5} />);
+    expect(screen.getByText("교인 승인 후 이용 가능합니다")).toBeDefined();
+    expect(screen.queryByRole("button", { name: "다시 시도" })).toBeNull();
+  });
+  it("대조: 500이면 지금처럼 '불러오지 못했습니다' + 다시 시도", () => {
+    useAlbumMock.mockReturnValue(state({ isError: true, error: new ApiError(500, "INTERNAL_ERROR", undefined) }));
+    render(<AlbumDetail id={5} />);
+    expect(screen.getByText("앨범을 불러오지 못했습니다.")).toBeDefined();
+    expect(screen.getByRole("button", { name: "다시 시도" })).toBeDefined();
+    expect(screen.queryByText("로그인 후 이용 가능합니다")).toBeNull();
+  });
+});
+
+describe("AlbumDetail 교인만 배지", () => {
+  it("교인만 앨범이면 제목 옆에 '교인만' 배지", () => {
+    useAlbumMock.mockReturnValue(detailState({ data: { ...album, membersOnly: true } }));
+    render(<AlbumDetail id={5} />);
+    expect(screen.getByText("교인만")).toBeDefined();
+  });
+  it("대조: 일반 앨범은 배지 없음", () => {
+    useAlbumMock.mockReturnValue(detailState({ data: { ...album, membersOnly: false } }));
+    render(<AlbumDetail id={5} />);
+    expect(screen.queryByText("교인만")).toBeNull();
   });
 });
