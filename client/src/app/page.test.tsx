@@ -50,6 +50,12 @@ vi.mock("@/lib/api/main", () => ({
   })),
 }));
 
+const { getVisibilityMock } = vi.hoisted(() => ({ getVisibilityMock: vi.fn(async () => null as unknown) }));
+vi.mock("@/lib/api/visibility", async (orig) => ({
+  ...(await orig<typeof import("@/lib/api/visibility")>()),
+  getVisibility: getVisibilityMock,
+}));
+
 import Home from "./page";
 import { getMain } from "@/lib/api/main";
 
@@ -129,5 +135,25 @@ describe("Home (메인)", () => {
     expect(screen.getByRole("contentinfo")).toBeDefined();
     // 설교 데이터는 노출되지 않는다
     expect(screen.queryByText("부활의 증인")).toBeNull();
+  });
+
+  const allPublic = { notices: "PUBLIC", events: "PUBLIC", bulletins: "PUBLIC", sermons: "PUBLIC", gallery: "PUBLIC" } as const;
+
+  it("공지·일정이 모두 교인만이면 홈에 교회 소식 섹션이 없다(대조: 설교 섹션은 그대로)", async () => {
+    stubBrowserApis();
+    getVisibilityMock.mockResolvedValueOnce({ ...allPublic, notices: "MEMBERS", events: "MEMBERS" });
+    render(await Home());
+    expect(screen.queryByRole("heading", { name: MAIN_SECTIONS.news.title })).toBeNull();
+    expect(screen.queryByText("전교인 수련회 안내")).toBeNull();
+    expect(screen.getByText("부활의 증인")).toBeDefined();
+  });
+
+  it("공지만 교인만이면 섹션은 있고 공지 탭이 빠진다", async () => {
+    stubBrowserApis();
+    getVisibilityMock.mockResolvedValueOnce({ ...allPublic, notices: "MEMBERS" });
+    render(await Home());
+    expect(screen.getByRole("heading", { name: MAIN_SECTIONS.news.title })).toBeDefined();
+    expect(screen.queryByRole("tab", { name: MAIN_SECTIONS.notices.title })).toBeNull();
+    expect(screen.getByRole("tab", { name: MAIN_SECTIONS.events.title })).toBeDefined();
   });
 });

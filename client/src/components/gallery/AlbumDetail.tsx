@@ -8,13 +8,17 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/common/Skeleton";
 import { MarkdownContent } from "@/components/common/MarkdownContent";
+import { MemberAccessNotice, accessNoticeReason } from "@/components/common/MemberGate";
+import { MembersOnlyBadge } from "@/components/visibility/MembersOnlyBadge";
 import { useAlbum } from "./queries";
 import { PhotoGrid } from "./PhotoGrid";
 import { AlbumDetailActions } from "./GalleryAdminActions";
 
 // 상세 클라이언트 — 제목·메타·태그·description(마크다운)·사진 그리드.
 export function AlbumDetail({ id }: { id: number }) {
-  const { data: album, isPending, isError, refetch } = useAlbum(id);
+  const { data: album, isPending, isError, error, refetch } = useAlbum(id);
+  // 누구나 메뉴의 교인만 앨범 주소를 방문자가 열면 401 → 로그인 안내(스토리보드 E)
+  const accessReason = accessNoticeReason(error);
 
   return (
     <div>
@@ -31,6 +35,8 @@ export function AlbumDetail({ id }: { id: number }) {
           <Skeleton className="h-5 w-1/3" />
           <Skeleton className="mt-lg h-64 w-full rounded-xl" />
         </div>
+      ) : accessReason ? (
+        <MemberAccessNotice reason={accessReason} domainLabel="갤러리" />
       ) : isError || !album ? (
         <div className="mt-lg flex flex-col items-start gap-sm">
           <p className={cn(typo.bodyMd, "text-muted")}>앨범을 불러오지 못했습니다.</p>
@@ -40,7 +46,10 @@ export function AlbumDetail({ id }: { id: number }) {
         </div>
       ) : (
         <>
-          <h1 className={cn(typo.displaySm, "mt-base text-ink")}>{album.title}</h1>
+          <div className="mt-base flex flex-wrap items-center gap-sm">
+            <h1 className={cn(typo.displaySm, "text-ink")}>{album.title}</h1>
+            {album.membersOnly ? <MembersOnlyBadge /> : null}
+          </div>
           <p className={cn(typo.datetime, "mt-xs text-muted")}>
             {formatDate(album.createdAt)} · 사진 {album.photos.length}장
             {album.author ? ` · ${album.author}` : ""}

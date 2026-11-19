@@ -85,8 +85,9 @@ export function MediaLibrary() {
         <span className="flex items-center gap-sm">
           {m.mimeType.startsWith("image/") ? (
             // 40px 고정 썸네일 — 원본 대신 40px 변환본만 받는다(목록 전송량 절감 최대 지점).
-            // 서명 주소(m.url)는 최적화 불가·만료 위험 → unoptimized(church-backend#92)
-            <Image src={mediaSrc(m.id, m.url)} unoptimized={m.url !== undefined} alt="" width={40} height={40} className="size-10 shrink-0 rounded-sm object-cover" />
+            // 항상 unoptimized: 서명 주소는 만료되고(church-backend#92), 무서명 파일도 공개 범위가 바뀌면
+            // 교인 전용이 된다 — 최적화 캐시(31일)는 지울 수 없다(스펙 6.6-16).
+            <Image src={mediaSrc(m.id, m.url)} unoptimized alt="" width={40} height={40} className="size-10 shrink-0 rounded-sm object-cover" />
           ) : null}
           <span className="truncate">{m.filename}</span>
         </span>

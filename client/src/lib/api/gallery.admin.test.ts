@@ -20,6 +20,16 @@ describe("gallery.admin", () => {
     await patchAlbum(1, { title: "수정", version: 3 });
     expect(apiMutateMock).toHaveBeenCalledWith("/api/admin/gallery/albums/1", { method: "PATCH", body: { title: "수정", version: 3 } });
   });
+  it("patchAlbum은 membersOnly와 version을 body에 그대로 보낸다", async () => {
+    apiMutateMock.mockResolvedValue({ id: 1 });
+    await patchAlbum(1, { membersOnly: true, version: 3 });
+    expect(apiMutateMock).toHaveBeenCalledWith("/api/admin/gallery/albums/1", { method: "PATCH", body: { membersOnly: true, version: 3 } });
+  });
+  it("createAlbum은 membersOnly를 body에 싣는다", async () => {
+    apiMutateMock.mockResolvedValue({ id: 1 });
+    await createAlbum({ title: "수련회", membersOnly: true });
+    expect(apiMutateMock.mock.calls[0][1].body.membersOnly).toBe(true);
+  });
   it("addPhotos는 mediaIds를 쿼리로 POST", async () => {
     apiUploadMock.mockResolvedValue({ id: 1 });
     await addPhotos(9, [3, 5]);

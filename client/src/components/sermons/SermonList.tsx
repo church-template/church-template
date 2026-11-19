@@ -9,7 +9,10 @@ import { TagFilter } from "@/components/common/TagFilter";
 import { Pagination } from "@/components/common/Pagination";
 import { EmptyState } from "@/components/common/EmptyState";
 import { CardGridSkeleton } from "@/components/common/CardGridSkeleton";
+import { MemberAccessNotice, accessNoticeReason } from "@/components/common/MemberGate";
+import { MembersOnlyBanner, MembersOnlyToggle } from "@/components/visibility/MembersOnlyToggle";
 import type { SermonListParams } from "@/lib/api/sermons";
+import type { SermonCardResponse, VisibilityLevel } from "@/lib/api/types";
 import { SermonSearch } from "./SermonSearch";
 import { ActiveFilters } from "./ActiveFilters";
 import { SermonFeature } from "./SermonFeature";
@@ -37,7 +40,8 @@ function toDate(v: string | null): string | undefined {
 // 목록 클라이언트 — URL(?page·?tagId·?q·?preacher·?series·?from·?to)을 쿼리로,
 // 검색/필터/페이지네이션은 URL 갱신 → useSearchParams 재파싱으로 동작(AlbumList 패턴).
 // 화면: 필터 없는 첫 페이지면 최신 설교를 띠로 크게(SermonFeature), 나머지는 월별 줄 목록(SermonMonthList).
-export function SermonList() {
+// menuLevel: 메뉴 전체가 교인만이면 글 단위 버튼 위에 안내 한 줄(MembersOnlyBanner).
+export function SermonList({ menuLevel }: { menuLevel: VisibilityLevel }) {
   const searchParams = useSearchParams();
   const params: SermonListParams = {
     page: toNum(searchParams.get("page")),
@@ -55,15 +59,21 @@ export function SermonList() {
 
   const sermons = useSermons(params);
   const tags = useSermonTags();
+  // 401/403 = 교인 전용(만료 세션·낡은 설정) → 오류 대신 게이트와 같은 안내
+  const accessReason = accessNoticeReason(sermons.error);
   const content = sermons.data?.content ?? [];
   const featured = showFeature ? content[0] : undefined;
   const rest = featured ? content.slice(1) : content;
 
   return (
     <div className="mt-lg flex flex-col gap-base">
+      {/* 모든 글 단위 버튼보다 위에 한 번 — 행마다 반복하지 않는다(6.6-18) */}
+      <MembersOnlyBanner menuLevel={menuLevel} writePermission="SERMON_WRITE" />
       {featured ? (
         <div className="mb-lg">
           <SermonFeature sermon={featured} now={now} />
+          {/* 띠 전체가 링크라 버튼은 띠 아래 형제 줄에(주보 띠의 어드민 액션 배치와 같음) */}
+          <div className="mt-xs flex justify-end">{toggle(featured)}</div>
         </div>
       ) : null}
       <SermonSearch />
@@ -74,6 +84,8 @@ export function SermonList() {
         <div className="mt-xl">
           <CardGridSkeleton />
         </div>
+      ) : accessReason ? (
+        <MemberAccessNotice reason={accessReason} domainLabel="설교" />
       ) : sermons.isError || !sermons.data ? (
         <div className="flex flex-col items-start gap-sm py-xl">
           <p className={cn(typo.bodyMd, "text-muted")}>{SERMON_LIST.loadError}</p>
@@ -90,7 +102,7 @@ export function SermonList() {
               aria-busy={sermons.isPlaceholderData}
               className={cn("mt-xl", sermons.isPlaceholderData && "opacity-60 transition-opacity")}
             >
-              <SermonMonthList sermons={rest} />
+              <SermonMonthList sermons={rest} renderActions={toggle} />
             </div>
           ) : null}
           {sermons.data.page.totalPages > 1 ? (
@@ -102,4 +114,11 @@ export function SermonList() {
       )}
     </div>
   );
+}
+
+// 목록에서 바로 저장하려면 카드의 version이 필요하다 — 칸이 없는 응답(구 백엔드)은 버튼을 그리지 않는다.
+function toggle(s: SermonCardResponse) {
+  return s.version != null ? (
+    <MembersOnlyToggle kind="sermon" id={s.id} title={s.title} version={s.version} membersOnly={!!s.membersOnly} />
+  ) : null;
 }

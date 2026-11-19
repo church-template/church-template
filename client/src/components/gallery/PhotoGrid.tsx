@@ -42,10 +42,10 @@ export function PhotoGrid({
               >
                 {/* fill 모드는 부모 relative 필수(next/image 규약) */}
                 <span className="relative block aspect-square overflow-hidden rounded-md">
-                  {/* 서명 주소는 next/image 최적화 불가(remotePatterns의 URL 패턴이 쿼리스트링을 막고, 31일 최적화 캐시가 만료 뒤에도 내줄 수 있음) → unoptimized */}
+                  {/* 항상 unoptimized — 공개 범위가 바뀔 수 있는 사진이라 지울 수 없는 31일 최적화 캐시를 쓰지 않는다(스펙 6.6-16) */}
                   <Image
                     src={mediaSrc(p.mediaId, p.url)}
-                    unoptimized={p.url !== undefined}
+                    unoptimized
                     alt={p.caption ?? ""}
                     fill
                     sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"

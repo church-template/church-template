@@ -1,5 +1,6 @@
 import { apiUrl } from "@/lib/auth/apiBase";
 import type { Page } from "@/lib/page";
+import { throwIfMembersOnly } from "./visibility";
 import type { EventCardResponse, EventDetailResponse } from "./types";
 
 // 월 단위 단일 페이지 — 백엔드 기본 size=10 잘림 방지(스펙 §4.1). 매직넘버 금지.
@@ -27,7 +28,10 @@ export async function getEvents(p: EventListParams): Promise<Page<EventCardRespo
   const res = await fetch(apiUrl(`/api/events${buildEventQuery(p)}`), {
     next: { revalidate: 60, tags: ["events"] },
   });
-  if (!res.ok) throw new Error(`GET /api/events 실패: ${res.status}`);
+  if (!res.ok) {
+    await throwIfMembersOnly(res); // 401/403 = 교인 전용 신호(낡은 설정) → 페이지가 게이트로 넘긴다
+    throw new Error(`GET /api/events 실패: ${res.status}`);
+  }
   return (await res.json()) as Page<EventCardResponse>;
 }
 
@@ -35,6 +39,9 @@ export async function getEvents(p: EventListParams): Promise<Page<EventCardRespo
 export async function getEvent(id: number): Promise<EventDetailResponse | null> {
   const res = await fetch(apiUrl(`/api/events/${id}`), { next: { revalidate: 60, tags: ["events"] } });
   if (res.status === 404) return null;
-  if (!res.ok) throw new Error(`GET /api/events/${id} 실패: ${res.status}`);
+  if (!res.ok) {
+    await throwIfMembersOnly(res); // 401/403 = 교인 전용 신호(낡은 설정) → 페이지가 게이트로 넘긴다
+    throw new Error(`GET /api/events/${id} 실패: ${res.status}`);
+  }
   return (await res.json()) as EventDetailResponse;
 }

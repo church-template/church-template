@@ -13,6 +13,7 @@ export const sermonSchema = z.object({
   videoUrl: z.string().max(500),
   audioUrl: z.string().max(500),
   tagIds: z.array(z.number()),
+  membersOnly: z.boolean(), // 이 설교는 교인만 보기
 });
 
 export type SermonFormValues = z.infer<typeof sermonSchema>;

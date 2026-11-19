@@ -29,6 +29,21 @@ beforeEach(() => {
 });
 
 describe("ManageHub", () => {
+  it("VISIBILITY_MANAGE면 회원·권한 분류에 '공개 범위'(설정 화면 링크)", () => {
+    mockMe(["VISIBILITY_MANAGE"]);
+    renderHub();
+    expect(screen.queryByText("회원·권한")).not.toBeNull();
+    expect(screen.queryByText("공개 범위")).not.toBeNull();
+    expect(screen.getByRole("link", { name: /공개 범위/ }).getAttribute("href")).toBe("/mypage/manage/visibility");
+  });
+
+  it("대조: VISIBILITY_MANAGE가 없으면 '공개 범위' 없음", () => {
+    mockMe(["MEMBER_MANAGE"]);
+    renderHub();
+    expect(screen.queryByText("회원·권한")).not.toBeNull();
+    expect(screen.queryByText("공개 범위")).toBeNull();
+  });
+
   it("보유 권한 도메인만 이름·설명과 함께 노출한다", () => {
     mockMe(["SERMON_WRITE"]);
     renderHub();

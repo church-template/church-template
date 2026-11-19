@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { buildNoticeQuery, getNotices, getNotice } from "./notices";
+import { isMembersOnlyError } from "./visibility";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -51,5 +52,30 @@ describe("getNotice", () => {
   it("그 외 에러는 throw", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 503 }) as Response));
     await expect(getNotice(5)).rejects.toThrow("GET /api/notices/5 실패: 503");
+  });
+});
+
+// 설정 캐시가 낡은 동안 백엔드가 교인 전용 신호(401/403)를 주면 오류 화면이 아니라 게이트로 넘긴다(6.6-12).
+const errRes = (status: number, errorCode: string) => new Response(JSON.stringify({ errorCode }), { status });
+describe("공지 서버 조회의 교인 전용 신호", () => {
+  it("getNotices가 401 INVALID_TOKEN을 받으면 MembersOnlyError를 던진다", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => errRes(401, "INVALID_TOKEN")));
+    const e = await getNotices({}).catch((x: unknown) => x);
+    expect(isMembersOnlyError(e)).toBe(true);
+  });
+  it("getNotice가 403 ACCESS_DENIED를 받으면 MembersOnlyError를 던진다", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => errRes(403, "ACCESS_DENIED")));
+    const e = await getNotice(5).catch((x: unknown) => x);
+    expect(isMembersOnlyError(e)).toBe(true);
+  });
+  it("대조: 500이면 일반 Error(교인 전용 신호 아님)", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => errRes(500, "INTERNAL_ERROR")));
+    const e = await getNotices({}).catch((x: unknown) => x);
+    expect(e).toBeInstanceOf(Error);
+    expect(isMembersOnlyError(e)).toBe(false);
+  });
+  it("대조: getNotice 404는 지금처럼 null", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => errRes(404, "RESOURCE_NOT_FOUND")));
+    expect(await getNotice(5)).toBeNull();
   });
 });

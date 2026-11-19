@@ -3,23 +3,26 @@ import type { Metadata } from "next";
 import { Container } from "@/components/shell/Container";
 import { typo } from "@/constants/typography";
 import { cn } from "@/lib/utils";
-import { formatMonthDay, groupByMonth } from "@/lib/monthGroups";
-import { apiUrl } from "@/lib/auth/apiBase";
 import { getBulletins } from "@/lib/api/bulletins";
-import { BulletinFeature } from "@/components/bulletins/BulletinFeature";
-import { BulletinListAction, BulletinRowActions } from "@/components/bulletins/BulletinAdminActions";
-import { MonthSection } from "@/components/common/MonthSection";
-import { MonthListRow } from "@/components/common/MonthListRow";
-import { Pagination } from "@/components/common/Pagination";
-import { EmptyState } from "@/components/common/EmptyState";
+import { VisibilityStatusLink } from "@/components/visibility/VisibilityStatusLink";
+import { getVisibility, loadPublic, resolveVisibility } from "@/lib/api/visibility";
+import { BulletinListAction } from "@/components/bulletins/BulletinAdminActions";
+import { BulletinListView } from "@/components/bulletins/BulletinListView";
+import { BulletinListClient } from "@/components/bulletins/BulletinMemberViews";
+import { MemberGate } from "@/components/common/MemberGate";
 import { CHURCH_NAME } from "@/constants/church";
 import { NEWS_LIST } from "@/constants/news";
 
-export const metadata: Metadata = {
-  title: NEWS_LIST.bulletinTitle,
-  description: `${CHURCH_NAME} 주보를 확인하고 내려받을 수 있습니다.`,
-  alternates: { canonical: "/bulletins" },
-};
+// 교인만이면 목록도 색인하지 않는다(robots.txt 차단과 이중 방어). 설정을 못 읽으면 지금처럼 색인 허용.
+export async function generateMetadata(): Promise<Metadata> {
+  const levels = resolveVisibility(await getVisibility());
+  return {
+    title: NEWS_LIST.bulletinTitle,
+    description: `${CHURCH_NAME} 주보를 확인하고 내려받을 수 있습니다.`,
+    alternates: { canonical: "/bulletins" },
+    ...(levels.bulletins === "MEMBERS" ? { robots: { index: false, follow: false } } : {}),
+  };
+}
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -32,8 +35,9 @@ function toNum(v: string | string[] | undefined): number | undefined {
   return Number.isFinite(n) ? n : undefined;
 }
 
-// 공개 주보 목록 — 첫 페이지의 최신 주보는 띠로 크게(bulletin-feature), 나머지는 월별 목록.
-// searchParams 접근 → 동적 렌더. 서버 정렬(serviceDate,desc) 신뢰. 행 클릭 = /api/media/{mediaId} 새 탭 PDF(상세 페이지 없음).
+// 주보 목록. 메뉴가 누구나면 서버 렌더(ISR 태그 bulletins), 교인만이면(또는 낡은 설정으로 서버 조회가 401/403이면)
+// 서버는 주보를 읽지 않고 BULLETIN_VIEW 게이트 + 브라우저 조회로 그린다. 행 클릭 = PDF 새 탭(상세 페이지 없음).
+// searchParams 접근 → 동적 렌더.
 export default async function BulletinsPage({
   searchParams,
 }: {
@@ -41,61 +45,26 @@ export default async function BulletinsPage({
 }) {
   const sp = await searchParams;
   const page = toNum(sp.page);
-  const data = await getBulletins({ page });
-  const featured = !page ? data.content[0] : undefined;
-  const rest = featured ? data.content.slice(1) : data.content;
-  const pdf = (mediaId: number) => apiUrl(`/api/media/${mediaId}`);
+  const visibility = await getVisibility();
+  const levels = resolveVisibility(visibility);
+  const loaded = await loadPublic(levels.bulletins, () => getBulletins({ page }));
 
   return (
     <Container as="section" className="py-section">
       <div className="flex items-center justify-between gap-base">
-        <h1 className={cn(typo.displayMd, "text-ink")}>{NEWS_LIST.bulletinTitle}</h1>
+        <div className="flex flex-wrap items-center gap-x-base">
+          <h1 className={cn(typo.displayMd, "text-ink")}>{NEWS_LIST.bulletinTitle}</h1>
+          <VisibilityStatusLink level={visibility ? visibility.bulletins : null} />
+        </div>
         <BulletinListAction />
       </div>
-
-      {data.content.length === 0 ? (
-        <EmptyState message={NEWS_LIST.bulletinEmpty} className="mt-xl" />
+      {loaded ? (
+        <BulletinListView data={loaded.data} page={page} now={new Date()} />
       ) : (
-        <div className="mt-xl flex flex-col gap-xl">
-          {featured ? (
-            <div>
-              <BulletinFeature
-                title={featured.title}
-                serviceDate={featured.serviceDate}
-                author={featured.author}
-                pdfUrl={pdf(featured.mediaId)}
-                now={new Date()}
-              />
-              {/* 어드민 수정·삭제 — 띠 밖 형제로(중첩 인터랙티브 금지). 비어드민은 아무것도 렌더하지 않는다. */}
-              <div className="mt-xs flex justify-end">
-                <BulletinRowActions b={featured} />
-              </div>
-            </div>
-          ) : null}
-          {groupByMonth(rest, (b) => b.serviceDate).map((g) => (
-            <MonthSection key={g.key} id={g.key} label={g.label}>
-              {g.items.map((b) => (
-                <MonthListRow
-                  key={b.id}
-                  href={pdf(b.mediaId)}
-                  external
-                  srHint={NEWS_LIST.pdfHint}
-                  date={formatMonthDay(b.serviceDate)}
-                  title={b.title}
-                  meta={b.author}
-                  actions={<BulletinRowActions b={b} />}
-                />
-              ))}
-            </MonthSection>
-          ))}
-        </div>
+        <MemberGate permission="BULLETIN_VIEW" domainLabel={NEWS_LIST.bulletinTitle}>
+          <BulletinListClient page={page} />
+        </MemberGate>
       )}
-
-      {data.page.totalPages > 1 ? (
-        <div className="mt-xl">
-          <Pagination page={data.page} />
-        </div>
-      ) : null}
     </Container>
   );
 }

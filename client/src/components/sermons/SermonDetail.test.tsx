@@ -15,10 +15,15 @@ vi.mock("./SermonAudio", () => ({ SermonAudio: () => "AUDIO" }));
 // SermonDetailActions(useRouter·RequirePermission 포함) 무력화 — SermonAdminActions.test에서 검증.
 vi.mock("./SermonAdminActions", () => ({ SermonDetailActions: () => null, SermonListAction: () => null }));
 vi.mock("@/components/common/MarkdownContent", () => ({
-  MarkdownContent: ({ source }: { source: string }) => <div>{source}</div>,
+  MarkdownContent: ({ source, mediaUrls }: { source: string; mediaUrls?: Record<string, string> }) => (
+    <div data-media-urls={JSON.stringify(mediaUrls ?? null)}>{source}</div>
+  ),
 }));
 
+vi.mock("next/navigation", () => ({ usePathname: () => "/sermons/7" }));
+
 import { SermonDetail } from "./SermonDetail";
+import { ApiError } from "@/lib/auth/apiError";
 
 function state(over: Record<string, unknown>) {
   return { data: undefined, isPending: false, isError: false, refetch: vi.fn(), ...over };
@@ -68,5 +73,50 @@ describe("SermonDetail", () => {
     render(<SermonDetail id={7} />);
     expect(screen.queryByText("VIDEO")).toBeNull();
     expect(screen.queryByText("AUDIO")).toBeNull();
+  });
+});
+
+// 교인 전용 글·낡은 설정: 401/403은 오류가 아니라 MemberGate와 같은 안내(errorCode 분기)
+describe("SermonDetail 접근 안내", () => {
+  it("401 INVALID_TOKEN이면 로그인 안내와 로그인 링크", () => {
+    useSermonMock.mockReturnValue(state({ isError: true, error: new ApiError(401, "INVALID_TOKEN", undefined) }));
+    render(<SermonDetail id={7} />);
+    expect(screen.getByText("로그인 후 이용 가능합니다")).toBeDefined();
+    expect(screen.getByText("설교는 교인 전용입니다. 로그인해 주세요.")).toBeDefined();
+    expect(screen.getByRole("link", { name: "로그인" }).getAttribute("href")).toBe("/login?next=%2Fsermons%2F7");
+    expect(screen.queryByRole("button", { name: "다시 시도" })).toBeNull();
+  });
+  it("403 ACCESS_DENIED면 승인 안내", () => {
+    useSermonMock.mockReturnValue(state({ isError: true, error: new ApiError(403, "ACCESS_DENIED", undefined) }));
+    render(<SermonDetail id={7} />);
+    expect(screen.getByText("교인 승인 후 이용 가능합니다")).toBeDefined();
+    expect(screen.queryByRole("button", { name: "다시 시도" })).toBeNull();
+  });
+  it("대조: 500이면 지금처럼 '불러오지 못했습니다' + 다시 시도", () => {
+    useSermonMock.mockReturnValue(state({ isError: true, error: new ApiError(500, "INTERNAL_ERROR", undefined) }));
+    render(<SermonDetail id={7} />);
+    expect(screen.getByText("설교를 불러오지 못했습니다.")).toBeDefined();
+    expect(screen.getByRole("button", { name: "다시 시도" })).toBeDefined();
+    expect(screen.queryByText("로그인 후 이용 가능합니다")).toBeNull();
+  });
+});
+
+describe("SermonDetail 교인만·서명 주소", () => {
+  it("교인만 설교면 제목 옆에 '교인만' 배지", () => {
+    useSermonMock.mockReturnValue(state({ data: { ...sermon, membersOnly: true } }));
+    render(<SermonDetail id={7} />);
+    expect(screen.getByText("교인만")).toBeDefined();
+  });
+  it("대조: 일반 설교는 배지 없음", () => {
+    useSermonMock.mockReturnValue(state({ data: { ...sermon, membersOnly: false } }));
+    render(<SermonDetail id={7} />);
+    expect(screen.queryByText("교인만")).toBeNull();
+  });
+  // 교인만 설교의 본문 이미지는 무서명 주소가 404 — 응답 mediaUrls의 서명 주소로 그린다(스펙 6.2).
+  it("본문에 응답의 mediaUrls를 넘긴다", () => {
+    const mediaUrls = { "42": "/api/media/42?exp=1&sig=s" };
+    useSermonMock.mockReturnValue(state({ data: { ...sermon, mediaUrls } }));
+    render(<SermonDetail id={7} />);
+    expect(screen.getByText("본문 마크다운").getAttribute("data-media-urls")).toBe(JSON.stringify(mediaUrls));
   });
 });

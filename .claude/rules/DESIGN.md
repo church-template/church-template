@@ -518,6 +518,15 @@ portal로 뜨는 동작 컴포넌트(Modal·Sheet·Popover·Select·Dropdown·To
   현재 위치 첨부(브라우저 geolocation) 지원 — 신청 다이얼로그에 "현재 위치 첨부" 버튼(lucide `LocateFixed`) +
   첨부 시 "위치 첨부됨"·"지도에서 확인"(카카오맵 좌표 URL)·지우기. 픽업 텍스트는 선택(텍스트·좌표 중 최소 하나).
   카드는 좌표가 있으면 "지도 보기" 링크, 픽업 텍스트가 없으면 "위치 첨부됨" 표기.
+- **`members-only-toggle`**: 설교·앨범 한 건의 교인만 전환(#198). `button-secondary` 48px + lucide `Lock`(교인만)/`Globe`(누구나 공개) 20 + `{typography.button}`.
+  **버튼 글자 = 지금 상태**(`교인만` / `누구나 공개`), 누르면 반대로 바뀌어 바로 저장 + Toast. 누르면 일어날 동작은 `aria-label`로 덮지 않고 글자 뒤 `sr-only`로 잇는다
+  (접근 이름 예: "교인만, 달란트 시장 앨범을 누구나 보도록 바꾸기" — 보이는 글자로 시작해야 음성 제어로 부를 수 있다, WCAG 2.5.3).
+  쓰기 권한(`SERMON_WRITE`·`GALLERY_WRITE`) 보유자에게만. 항상 카드·행 링크 밖 형제(설교 행 = 링크 오른쪽, 설교 띠·앨범 카드 = 아래 줄).
+  부서에 연결된 누구나 앨범은 비활성 + 아래 `{typography.caption}` `{colors.body}` 안내(부서 연결을 먼저 끊으라는 문장).
+- **`members-only-badge`**: 교인만 글 표시. 기존 `Badge` default + lucide `Lock` 16, 새 색 없음. 카드·행·상세 제목 옆. 쓰기 권한이 없는 교인에게는 이 배지만 보인다.
+- **`members-only-banner`**: 메뉴 전체가 교인만일 때 목록 위 한 줄(목록당 1회, 행마다 아님). `{typography.body-sm}` `{colors.body}` + lucide `Lock` 20, 배경·테두리 없음. 쓰기 권한자에게만.
+- **`visibility-status-link`**: 공지·일정·주보·설교·갤러리 목록 제목 줄의 공개 상태 표시(#198). `교인만 공개 · 변경` / `누구나 공개 · 변경` `{typography.body-sm}` `{colors.body}`(hover primary) + 앞 lucide `Lock`/`Globe` 20 + 뒤 `ChevronRight` 20. 48px 누름 영역 링크 → `/mypage/manage/visibility`.
+  `VISIBILITY_MANAGE` 보유자에게만. 설정을 못 읽었으면 그리지 않는다(틀린 상태를 보이지 않게). 제목(h1) 바로 옆, 등록 버튼 앞.
 
 ### 밴드
 - **`cta-band-dark`**: 프리푸터. "처음 오셨나요?" 헤드라인 `{typography.display-lg}` +
@@ -609,6 +618,7 @@ portal로 뜨는 동작 컴포넌트(Modal·Sheet·Popover·Select·Dropdown·To
   `{rounded.sm}`(8px)은 곡률이 과해 4px이 중첩 라디우스 비율(외부 ≈ 내부 ×2)에 부합한다.
   체크 시 `{colors.primary}` 채움 + on-primary lucide `Check`. 라벨 포함 행 전체가 클릭
   영역(행 높이 ≥ 48px — 고령 터치). 에러 메시지는 text-input과 동일(아래 caption, semantic 토큰).
+  비활성 + 설명: 바꿀 수 없는 이유가 있으면(부서 연결 앨범의 교인만) 비활성으로 두고 아래 `{typography.caption}` `{colors.body}` 한 줄로 이유를 쓴다.
 - **`inquiry-form`**: 공개 문의 접수 폼(`/about/location`). `text-input`·`Textarea`·`checkbox`(+옆에 바로 `TermsDialog` 전문 보기) 조합에 48px `button-primary`. 비회원 제출이라 인증 없음.
   짧은 필드(이름·연락처)는 `sm:` 이상에서 2열 — 한 줄에 하나씩 쌓으면 카드가 옆 컬럼(`찾아오는 방법`)보다 과하게 길어진다.
   **배치**: 연락처(흰 섹션) 다음의 `{colors.surface-soft}` 밴드에서 **좌 `찾아오는 방법` : 우 문의 카드 = 5:7** 2컬럼(모바일 세로 스택). 문의가 이 페이지의 주 행동이라 폭을 더 준다. 문의 카드는 회색 밴드 위의 `{colors.canvas}` 카드(`{rounded.xl}` + hairline + `{spacing.xl}` 패딩) — 밴드 배경·컨테이너는 페이지가 소유한다.
@@ -620,6 +630,14 @@ portal로 뜨는 동작 컴포넌트(Modal·Sheet·Popover·Select·Dropdown·To
 - **`mypage-layout`**: 마이페이지(`/mypage`) 뼈대(#169). 컨테이너 1200px 안에서 ≥64rem은 좌 메뉴 3 : 우 본문 9(12열 그리드, `{spacing.xxl}` 간격), 본문은 내 정보 → 내 활동 → 관리 → 계정 순 섹션(섹션 간 `{spacing.xxl}`, 각 섹션 제목 `{typography.title-lg}`). 내 활동·관리는 보이는 내용이 있을 때만 섹션째 나온다. 계정 = 비밀번호·약관 카드(`{rounded.xl}` + 헤어라인) 아래 회원 탈퇴(좌)·로그아웃(우). 프로필 카드에는 이용 권한 배지 목록을 두지 않는다(관리자는 17개가 이름을 덮는다 — 할 수 있는 일은 `manage-hub`가 보여준다).
 - **`mypage-nav`**: 마이페이지 바로가기. ≥64rem = 왼쪽 sticky 세로 메뉴(행 48px 이상, 아이콘 20 + `{typography.body-md}` `{colors.body}`, 현재 항목 `{colors.primary-soft}` 채움 + `{colors.primary}` 600, `{rounded.lg}`), 관리 분류 앞에 묶음 제목 `{typography.caption-strong}` muted. <64rem = 상단 sticky 칩 한 줄 가로 스크롤(`worship-day-filter` 칩 결: 48px, `{rounded.lg}`, `{typography.button}`, 현재 칩 `{colors.ink}` 채움·on-dark). 현재 항목 = 뷰포트 30~40% 띠를 지나는 섹션(IntersectionObserver), `aria-current="location"`. 메뉴엔 실제로 보이는 섹션만 싣는다(`visibleManageGroups` 공유).
 - **`manage-hub`**: 마이페이지 관리 섹션(#169 개편). `useMe().permissions` 기준 권한 보유 도메인만 노출(보유 0이면 섹션 비노출, 보유 0개 분류는 제목째 비노출). 위에서부터 ① 찾기 칸 — `searchPill` 입력(56px, 왼쪽 lucide `Search`), 이름·설명 일부로 즉시 거르고 없으면 안내 한 줄(`role="status"`) ② 최근에 연 관리 — 이 기기 localStorage(`mypage:recent-manage`, 최대 4, 권한 있는 것만) 칩(56px, `{rounded.lg}` + 헤어라인, hover 보더 primary), 찾는 중엔 숨김 ③ 분류별(`MANAGE_CATEGORIES` 순) 줄 목록 — 분류 제목 `{typography.title-sm}` + 2px `{colors.ink}` 하단 룰, ≥48rem 2열, 행 = 아이콘 플레이트(40px `{rounded.full}` `primary-soft`·primary, **회원·권한은 `surface-strong`·body로 거리 두기**) + 이름 `{typography.title-md}`(hover primary) + 설명 한 줄 `{typography.body-sm}` muted + `ChevronRight`, 1px 헤어라인. 설명·아이콘은 `MANAGE_DOMAINS`의 `desc`·`Icon`. 문의 관리에는 미처리 건수 `Badge` primary(`GET /api/admin/inquiries?completed=false`의 `totalElements`, `INQUIRY_MANAGE` 보유 시에만 조회, 0이면 숨김). 공개 도메인은 해당 공개 페이지로, 운영 도메인은 `/mypage/manage/*`로 링크.
+  회원·권한 분류에 **공개 범위**(`VISIBILITY_MANAGE`, lucide `Globe`) — 메뉴마다 누구나 볼지 교인만 볼지 정하는 화면(`visibility-settings`).
+- **`visibility-settings`**: 공개 범위 설정(`/mypage/manage/visibility`, #198). `edit-page-shell` 없이 단일 칸(`--container-narrow`). 제목 아래 리드 `{typography.body-md}` `{colors.body}`.
+  행 5개(공지·일정·주보·설교·갤러리) = `form-section` 결 2px `{colors.ink}` 상단 룰 아래 1px 헤어라인 줄. 행 = `fieldset` — 메뉴명(`legend`) `{typography.title-md}` + 라디오 2개 `누구나`·`교인만` `{typography.body-md}`.
+  라디오는 **native `input type="radio"`**(새 컴포넌트 라이브러리 금지), 24px `{rounded.full}`, 테두리 2px `{colors.muted-soft}` → 선택 시 `{colors.primary}` 굵은 테두리(가운데 canvas 점). 라벨 행 전체가 누름 영역(행 높이 ≥48px).
+  설교·갤러리 행 아래 `{typography.caption}` `{colors.body}` 안내("글마다 교인만으로 따로 정할 수 있어요"). 아래 `취소`(button-secondary, 저장된 값으로 되돌림) `저장`(button-primary — 화면 유일 파란 버튼).
+  `교인만`으로 바꾸는 저장은 바로, `누구나`로 여는 메뉴가 있으면 `visibility-confirm-dialog`를 거친다.
+- **`visibility-confirm-dialog`**: 누구나로 여는 저장의 확인창. 기존 `Dialog` + 제목 "누구나 볼 수 있게 바꿀까요?" + 여는 메뉴마다 한 문장 `{typography.body-md}` `{colors.body}`.
+  설교·갤러리는 그 메뉴의 쓰기 권한이 있으면 숫자를 넣는다("앨범 32개 중 9개는 교인만 보고, 23개는 …" — 목록 `totalElements`), 없거나 못 읽으면 숫자 없는 문장. 숫자를 받는 동안 `바꾸기` 비활성. `취소` secondary · `바꾸기` button-primary.
 - **`my-vehicle-boardings`**: 마이페이지 "내 차량 탑승" 섹션(my-challenge-history 동형). 다가오는 운행일 목록(회원 `useVehicleRuns` 첫 페이지)에서 내 신청(`myRequest≠null`)만 필터 — 지난 이력은 백엔드 전용 API가 없어 미표시, 다가오는 운행이 여러 페이지면 첫 페이지 밖 신청은 이 섹션에 안 뜬다(전체는 `/vehicle-runs`에서). 행 = 출발 시각 `{typography.body-md}`(600) + `AppliedStatus`(체크+텍스트 인라인, 채움 없음) + "픽업: {장소 또는 '위치 첨부됨'}", 1px 헤어라인 구분, 행 전체가 `/vehicle-runs` 링크(취소·관리는 거기서). `VEHICLE_APPLY` 미보유·0건이면 섹션째 비노출(Reveal은 null 체크 뒤 내부 래핑).
 
 ### 성경통독 챌린지

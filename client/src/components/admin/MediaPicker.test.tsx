@@ -41,4 +41,14 @@ describe("MediaPicker", () => {
     fireEvent.click(screen.getByRole("button", { name: /선택/ }));
     expect(onConfirm).toHaveBeenCalledWith([5], [item]);
   });
+
+  // 스펙 6.6-16: 공지·설교 등의 공개 범위가 바뀌면 같은 파일이 교인 전용이 된다. 최적화 캐시(31일)는 지울 수 없으니
+  // 무서명 주소라도 /_next/image를 거치지 않는다.
+  it("서명 url이 없어도 썸네일을 최적화하지 않는다(무서명 주소 그대로)", async () => {
+    const item = { id: 6, filename: "q.jpg", mimeType: "image/jpeg", size: 1, uploadedBy: 1, createdAt: "" };
+    listMediaMock.mockResolvedValue({ content: [item], page: { size: 20, number: 0, totalElements: 1, totalPages: 1 } });
+    renderQc(<MediaPicker open accept="image" onOpenChange={() => {}} onConfirm={() => {}} />);
+    const img = await screen.findByAltText("q.jpg");
+    expect(img.getAttribute("src")).toBe("/api/media/6");
+  });
 });

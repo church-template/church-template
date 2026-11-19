@@ -193,4 +193,29 @@ describe("DeptAlbumField", () => {
     fireEvent.change(screen.getByLabelText("활동 사진 앨범 선택"), { target: { value: "8" } });
     expect(p.onChange).toHaveBeenCalledWith(8);
   });
+
+  // 교인만 앨범은 부서에 연결할 수 없다(스펙 6.2 — 부서 소개는 누구에게나 사진을 보인다).
+  it("교인만 앨범은 선택 목록에서 고를 수 없다", async () => {
+    m.fetchAlbums.mockResolvedValue({
+      content: [
+        { id: 1, title: "공개 앨범", membersOnly: false },
+        { id: 2, title: "교인 앨범", membersOnly: true },
+      ],
+    });
+    renderField();
+    const locked = (await screen.findByRole("option", { name: "교인 앨범 (교인만 — 부서에 연결할 수 없어요)" })) as HTMLOptionElement;
+    expect(locked.disabled).toBe(true);
+  });
+
+  it("대조: 일반 앨범 option은 활성이고 이름만 보인다", async () => {
+    m.fetchAlbums.mockResolvedValue({
+      content: [
+        { id: 1, title: "공개 앨범", membersOnly: false },
+        { id: 2, title: "교인 앨범", membersOnly: true },
+      ],
+    });
+    renderField();
+    const open = (await screen.findByRole("option", { name: "공개 앨범" })) as HTMLOptionElement;
+    expect(open.disabled).toBe(false);
+  });
 });

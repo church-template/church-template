@@ -33,6 +33,17 @@ describe("fetchAlbums", () => {
     expect(url).toContain("tagId=5");
   });
 
+  it("membersOnly를 쿼리에 싣고, 미지정이면 싣지 않는다", async () => {
+    authFetchMock.mockResolvedValue(jsonRes(emptyPage));
+    await fetchAlbums({ size: 1, membersOnly: true });
+    authFetchMock.mockResolvedValue(jsonRes(emptyPage));
+    await fetchAlbums({ size: 1 });
+    expect(authFetchMock.mock.calls[0][0]).toBe(
+      "/api/gallery/albums?size=1&sort=createdAt%2Cdesc&membersOnly=true",
+    );
+    expect(authFetchMock.mock.calls[1][0]).not.toContain("membersOnly");
+  });
+
   it("응답 봉투를 그대로 파싱한다", async () => {
     authFetchMock.mockResolvedValue(
       jsonRes({

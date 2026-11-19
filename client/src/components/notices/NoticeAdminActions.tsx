@@ -4,7 +4,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { RequirePermission } from "@/components/admin/RequirePermission";
 import { DeleteConfirmDialog } from "@/components/admin/DeleteConfirmDialog";
 import { Button, buttonVariants } from "@/components/ui/Button";
@@ -35,20 +35,34 @@ export function NoticeDetailActions({
   id: number; version: number; isPinned: boolean;
 }) {
   const router = useRouter();
+  const qc = useQueryClient();
   const [open, setOpen] = useState(false);
 
+  // 교인만 모드의 브라우저 조회 경로는 updateTag·router.refresh로 갱신되지 않는다 → 쿼리도 함께 무효화(6.6-13).
   const pin = useMutation({
     mutationFn: () => patchNotice(id, { version, isPinned: !isPinned }),
-    onError: adminOnError({ onReedit: () => router.refresh() }),
+    // 409: 상세를 다시 받아 최신 version으로(서버 경로는 refresh, 브라우저 경로는 쿼리 무효화).
+    onError: adminOnError({
+      onReedit: () => {
+        router.refresh();
+        return qc.invalidateQueries({ queryKey: ["notice", id] });
+      },
+    }),
     // 고정 토글도 공개 목록 반영 대상 — 즉시 무효화 후 라우터 갱신.
-    onSuccess: async () => { await revalidateNotices(); router.refresh(); },
+    onSuccess: async () => {
+      await revalidateNotices();
+      qc.invalidateQueries({ queryKey: ["notices"] });
+      qc.invalidateQueries({ queryKey: ["notice", id] });
+      router.refresh();
+    },
   });
   const remove = useMutation({
     mutationFn: () => deleteNotice(id),
     onError: adminOnError(),
     onSuccess: async () => {
-      // 공지 삭제 후 공개 ISR 캐시 즉시 무효화.
+      // 공지 삭제 후 공개 ISR 캐시·브라우저 조회 목록 즉시 무효화.
       await revalidateNotices();
+      qc.invalidateQueries({ queryKey: ["notices"] });
       notify.success("삭제했습니다.");
       setOpen(false);
       router.push("/notices");

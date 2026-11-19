@@ -15,6 +15,7 @@ export interface SermonCreateRequest {
   videoUrl?: string;
   audioUrl?: string;
   tagIds?: number[];
+  membersOnly?: boolean; // 이 설교는 교인만 보기
 }
 export interface SermonUpdateRequest extends SermonCreateRequest {
   version: number;
@@ -30,6 +31,7 @@ export interface SermonPatchRequest {
   videoUrl?: string;
   audioUrl?: string;
   tagIds?: number[];
+  membersOnly?: boolean;
 }
 
 export function createSermon(body: SermonCreateRequest): Promise<SermonDetailResponse> {

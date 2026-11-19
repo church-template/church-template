@@ -22,12 +22,23 @@ const base: GalleryAlbumCardResponse = {
 };
 
 describe("AlbumCard", () => {
-  it("상세 링크와 최적화 경유 썸네일 URL을 렌더한다", () => {
+  it("상세 링크와 썸네일 URL을 렌더한다", () => {
     const { container } = render(<AlbumCard album={base} />);
     expect(screen.getByRole("link").getAttribute("href")).toBe("/gallery/albums/3");
-    // next/image 최적화 프록시(/_next/image?url=…)를 경유해야 리사이즈·CDN 캐싱이 적용된다.
     const src = container.querySelector("img")?.getAttribute("src") ?? "";
-    expect(src).toContain(encodeURIComponent("/api/media/42"));
+    expect(src).toBe("/api/media/42");
+  });
+
+  // 공개 범위가 바뀔 수 있는 미디어 — 최적화 캐시(31일)는 지울 수 없어 교인만으로 바꿔도 남는다(6.6-16).
+  it("썸네일은 서명 주소가 없어도 최적화하지 않는다", () => {
+    const { container } = render(<AlbumCard album={{ ...base, thumbnailUrl: undefined }} />);
+    const src = container.querySelector("img")?.getAttribute("src") ?? "";
+    expect(src.startsWith("/_next/image")).toBe(false);
+  });
+
+  it("대조: 서명 주소가 있으면 그 주소를 그대로 쓴다", () => {
+    const { container } = render(<AlbumCard album={{ ...base, thumbnailUrl: "/api/media/42?exp=1&sig=t" }} />);
+    expect(container.querySelector("img")?.getAttribute("src")).toBe("/api/media/42?exp=1&sig=t");
   });
 
   it("thumbnailMediaId가 null이면 이미지 대신 플레이스홀더를 렌더한다", () => {
@@ -56,5 +67,15 @@ describe("AlbumCard", () => {
   it("thumbnailUrl이 null이면 thumbnailMediaId가 있어도 플레이스홀더(썸네일 없음)", () => {
     const { container } = render(<AlbumCard album={{ ...base, thumbnailUrl: null }} />);
     expect(container.querySelector("img")).toBeNull();
+  });
+
+  it("교인만 앨범이면 제목 옆에 '교인만' 배지", () => {
+    render(<AlbumCard album={{ ...base, membersOnly: true }} />);
+    expect(screen.getByText("교인만")).toBeDefined();
+  });
+
+  it("대조: 일반 앨범에는 배지가 없다", () => {
+    render(<AlbumCard album={{ ...base, membersOnly: false }} />);
+    expect(screen.queryByText("교인만")).toBeNull();
   });
 });

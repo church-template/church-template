@@ -5,7 +5,8 @@ import { ApiError } from "@/lib/auth/apiError";
 import { SERMON_DEFAULT_PREACHER } from "@/constants/church";
 import { todayKstDate } from "@/lib/date";
 
-const { createSermonMock, updateSermonMock, pushMock, refreshMock, notifySuccess } = vi.hoisted(() => ({
+const { createSermonMock, updateSermonMock, pushMock, refreshMock, notifySuccess, revalidateMainMock } = vi.hoisted(() => ({
+  revalidateMainMock: vi.fn(),
   createSermonMock: vi.fn(),
   updateSermonMock: vi.fn(),
   pushMock: vi.fn(),
@@ -15,6 +16,8 @@ const { createSermonMock, updateSermonMock, pushMock, refreshMock, notifySuccess
 vi.mock("@/lib/api/sermons.admin", () => ({ createSermon: createSermonMock, updateSermon: updateSermonMock }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: pushMock, refresh: refreshMock }) }));
 vi.mock("@/lib/notify", () => ({ notify: { success: notifySuccess, error: vi.fn() } }));
+// server action(updateTag)은 요청 밖에서 못 부른다 — 호출 여부만 본다.
+vi.mock("@/lib/admin/revalidate", () => ({ revalidateMain: revalidateMainMock }));
 // 태그 옵션 fetch는 폼 테스트 범위 밖 — 빈 배열로 고정
 vi.mock("@/lib/api/tags", () => ({ getTags: vi.fn().mockResolvedValue([]) }));
 
@@ -101,5 +104,74 @@ describe("SermonForm", () => {
     renderForm(<SermonForm mode="edit" initial={EDIT_INITIAL} />);
     expect((screen.getByLabelText("설교자") as HTMLInputElement).value).toBe("김목사");
     expect((screen.getByLabelText("설교일") as HTMLInputElement).value).toBe("2026-06-01");
+  });
+});
+
+// 글 단위 교인만(#198)
+describe("SermonForm 교인만 보기", () => {
+  function fillRequired() {
+    fireEvent.change(screen.getByLabelText("제목"), { target: { value: "주일설교" } });
+    fireEvent.change(screen.getByLabelText("설교자"), { target: { value: "김목사" } });
+    fireEvent.change(screen.getByLabelText("설교일"), { target: { value: "2026-06-01" } });
+  }
+
+  it("'이 설교는 교인만 보기'를 체크해 저장하면 body.membersOnly === true", async () => {
+    createSermonMock.mockResolvedValue({ id: 9 });
+    renderForm(<SermonForm mode="create" />);
+    fillRequired();
+    fireEvent.click(screen.getByLabelText("이 설교는 교인만 보기"));
+    fireEvent.click(screen.getByRole("button", { name: "저장" }));
+    await waitFor(() => expect(createSermonMock).toHaveBeenCalledWith(expect.objectContaining({ membersOnly: true })));
+  });
+
+  it("대조: 체크하지 않으면 membersOnly === false", async () => {
+    createSermonMock.mockResolvedValue({ id: 9 });
+    renderForm(<SermonForm mode="create" />);
+    fillRequired();
+    fireEvent.click(screen.getByRole("button", { name: "저장" }));
+    await waitFor(() => expect(createSermonMock).toHaveBeenCalledWith(expect.objectContaining({ membersOnly: false })));
+  });
+
+  it("수정 모드는 저장된 교인만 값으로 체크해 두고 PUT에 싣는다", async () => {
+    updateSermonMock.mockResolvedValue({ id: 9 });
+    renderForm(<SermonForm mode="edit" initial={{ ...EDIT_INITIAL, membersOnly: true }} />);
+    expect((screen.getByLabelText("이 설교는 교인만 보기") as HTMLInputElement).checked).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "저장" }));
+    await waitFor(() =>
+      expect(updateSermonMock).toHaveBeenCalledWith(9, expect.objectContaining({ membersOnly: true, version: 4 })),
+    );
+  });
+
+  it("저장 성공 시 홈 캐시를 지운다(홈 설교 목록에 교인만 제목이 남지 않게)", async () => {
+    createSermonMock.mockResolvedValue({ id: 9 });
+    renderForm(<SermonForm mode="create" />);
+    fillRequired();
+    fireEvent.click(screen.getByRole("button", { name: "저장" }));
+    await waitFor(() => expect(revalidateMainMock).toHaveBeenCalledTimes(1));
+  });
+
+  // 저장은 이미 끝났다 — 캐시 지우기(서버 액션)가 실패해도 실패처럼 보이면 다시 저장해 중복 글이 생긴다.
+  it("홈 캐시 지우기가 실패해도 저장 성공 Toast와 상세 이동은 그대로(실패는 로그만)", async () => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    revalidateMainMock.mockRejectedValueOnce(new Error("server action failed"));
+    createSermonMock.mockResolvedValue({ id: 9 });
+    renderForm(<SermonForm mode="create" />);
+    fillRequired();
+    fireEvent.click(screen.getByRole("button", { name: "저장" }));
+    await waitFor(() => expect(pushMock).toHaveBeenCalledWith("/sermons/9"));
+    expect(notifySuccess).toHaveBeenCalledTimes(1);
+    expect(logged).toHaveBeenCalled();
+    logged.mockRestore();
+  });
+
+  it("편집 미리보기에 응답 mediaUrls를 넘긴다", () => {
+    const { container } = renderForm(
+      <SermonForm
+        mode="edit"
+        initial={{ ...EDIT_INITIAL, content: "![](media:42)", mediaUrls: { "42": "/api/media/42?exp=1&sig=a" } }}
+      />,
+    );
+    fireEvent.mouseDown(screen.getByRole("tab", { name: "미리보기" })); // Radix Tabs는 jsdom에서 click 미동작
+    expect(container.querySelector("img")?.getAttribute("src")).toContain("sig=a");
   });
 });

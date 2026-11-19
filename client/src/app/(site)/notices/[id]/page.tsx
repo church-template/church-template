@@ -1,24 +1,28 @@
 // src/app/(site)/notices/[id]/page.tsx
 import { cache } from "react";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
+import { connection } from "next/server";
 import { Container } from "@/components/shell/Container";
-import { Badge } from "@/components/ui/Badge";
-import { typo } from "@/constants/typography";
-import { cn } from "@/lib/utils";
-import { formatDate } from "@/lib/date";
 import { getNotice } from "@/lib/api/notices";
+import { getVisibility, loadPublic, resolveVisibility } from "@/lib/api/visibility";
 import { CHURCH_DESCRIPTION } from "@/constants/church";
+import { NEWS_LIST } from "@/constants/news";
 import { excerpt } from "@/lib/seo";
-import { MarkdownContent } from "@/components/common/MarkdownContent";
+import { MemberGate } from "@/components/common/MemberGate";
 import { ArticleJsonLd } from "@/components/seo/ArticleJsonLd";
-import { NoticeDetailActions } from "@/components/notices/NoticeAdminActions";
+import { NoticeDetailView } from "@/components/notices/NoticeDetailView";
+import { NoticeDetailClient } from "@/components/notices/NoticeMemberViews";
 
 // getNotice는 no-store(조회수 +1 부수효과) — generateMetadata와 페이지가 같은 요청에서
 // 두 번 부르지 않도록 요청 단위로 캐시한다(조회수 이중 증가 방지).
 const getNoticeCached = cache(getNotice);
+
+// 메뉴가 교인만이면 서버는 읽지 않는다(null). 누구나인데 401/403이면 설정이 낡은 것 → 같은 게이트 경로.
+async function loadNotice(id: number) {
+  const levels = resolveVisibility(await getVisibility());
+  return loadPublic(levels.notices, () => getNoticeCached(id));
+}
 
 export async function generateMetadata({
   params,
@@ -28,7 +32,10 @@ export async function generateMetadata({
   const { id } = await params;
   const numId = Number(id);
   if (!Number.isInteger(numId) || numId <= 0) return {};
-  const notice = await getNoticeCached(numId);
+  const loaded = await loadNotice(numId);
+  // 교인 전용 — 제목·본문을 메타에 싣지 않고 색인도 막는다(오류 화면 대신, 6.6-12).
+  if (!loaded) return { title: NEWS_LIST.noticeTitle, robots: { index: false, follow: false } };
+  const notice = loaded.data;
   if (!notice) return {};
   const description = excerpt(notice.content) || CHURCH_DESCRIPTION;
   return {
@@ -44,58 +51,35 @@ export async function generateMetadata({
   };
 }
 
-// 공개 공지 상세. no-store(getNotice) → 동적. 영상/오디오 없음. isPinned 배지·클릭 태그 필터.
+// 공지 상세. 누구나면 서버 렌더(no-store, 조회수 +1), 교인만이면 NOTICE_VIEW 게이트 + 브라우저 조회.
 export default async function NoticeDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  // 교인만 분기엔 no-store 조회가 없어 정적으로 굳을 수 있다 → 요청 시점에 설정을 읽는다.
+  await connection();
   const { id } = await params;
   const numId = Number(id);
   if (!Number.isInteger(numId) || numId <= 0) notFound();
 
-  const notice = await getNoticeCached(numId);
+  const loaded = await loadNotice(numId);
+  if (!loaded) {
+    return (
+      <Container as="section" className="py-section">
+        <MemberGate permission="NOTICE_VIEW" domainLabel={NEWS_LIST.noticeTitle}>
+          <NoticeDetailClient id={numId} />
+        </MemberGate>
+      </Container>
+    );
+  }
+  const notice = loaded.data;
   if (!notice) notFound();
 
   return (
     <Container as="section" className="py-section">
       <ArticleJsonLd notice={notice} />
-      <Link
-        href="/notices"
-        className={cn(typo.bodySm, "inline-flex items-center gap-xxs text-primary")}
-      >
-        <ChevronLeft size={16} aria-hidden />
-        공지 목록
-      </Link>
-
-      {notice.isPinned ? (
-        <div className="mt-lg">
-          <Badge variant="primary">고정</Badge>
-        </div>
-      ) : null}
-
-      <h1 className={cn(typo.titleLg, "text-ink", notice.isPinned ? "mt-xs" : "mt-lg")}>
-        {notice.title}
-      </h1>
-      <NoticeDetailActions id={notice.id} version={notice.version} isPinned={notice.isPinned} />
-
-      <p className={cn(typo.datetime, "mt-xs text-muted")}>
-        {`${formatDate(notice.createdAt)} · 조회 ${notice.viewCount.toLocaleString("ko-KR")}`}
-        {notice.author ? ` · ${notice.author}` : ""}
-      </p>
-
-      {notice.tags.length > 0 ? (
-        <div className="mt-base flex flex-wrap gap-xs">
-          {notice.tags.map((t) => (
-            <Link key={t.id} href={`/notices?tagId=${t.id}`}>
-              <Badge>{t.name}</Badge>
-            </Link>
-          ))}
-        </div>
-      ) : null}
-
-      <div className="mt-lg border-t border-hairline" />
-      <MarkdownContent source={notice.content} className="mt-lg" />
+      <NoticeDetailView notice={notice} />
     </Container>
   );
 }

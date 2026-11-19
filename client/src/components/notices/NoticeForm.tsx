@@ -2,7 +2,7 @@
 
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -43,6 +43,7 @@ function toBody(v: NoticeFormValues): NoticeCreateRequest {
 
 export function NoticeForm({ mode, initial }: NoticeFormProps) {
   const router = useRouter();
+  const qc = useQueryClient();
   const {
     register,
     handleSubmit,
@@ -73,11 +74,15 @@ export function NoticeForm({ mode, initial }: NoticeFormProps) {
         fes.forEach((fe) =>
           setError(fe.field as keyof NoticeFormValues, { message: fe.reason }),
         ),
-      onReedit: () => router.refresh(),
+      // 409 재편집: 상세 쿼리 무효화 → NoticeEditLoader가 최신 version으로 폼을 다시 마운트한다(keyed).
+      onReedit: () => qc.invalidateQueries({ queryKey: initial ? ["notice", initial.id] : ["notices"] }),
     }),
     onSuccess: async (res) => {
       // 공지 ISR 캐시를 즉시 무효화해 공개 목록에 바로 반영(updateTag server action).
       await revalidateNotices();
+      // 교인만 모드의 브라우저 조회 경로도 새 내용을 받게(6.6-13).
+      qc.invalidateQueries({ queryKey: ["notices"] });
+      if (mode === "edit" && initial) qc.invalidateQueries({ queryKey: ["notice", initial.id] });
       notify.success(SAVED_NOTICE);
       router.push(`/notices/${res.id}`);
     },
@@ -111,7 +116,7 @@ export function NoticeForm({ mode, initial }: NoticeFormProps) {
           control={control}
           name="content"
           render={({ field }) => (
-            <MarkdownEditor value={field.value} onChange={field.onChange} id="notice-content" />
+            <MarkdownEditor value={field.value} onChange={field.onChange} id="notice-content" mediaUrls={initial?.mediaUrls} />
           )}
         />
       </div>

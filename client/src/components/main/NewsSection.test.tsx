@@ -62,4 +62,24 @@ describe("NewsSection (교회 소식)", () => {
     openTab(MAIN_SECTIONS.events.title);
     expect(screen.getByText(MAIN_SECTIONS.events.empty)).toBeDefined();
   });
+
+  it("공지가 교인만이면 공지 탭이 없고 일정 탭만 있다(처음부터 일정 내용)", () => {
+    render(<NewsSection notices={notices} events={events} showNotices={false} />);
+    expect(screen.queryByRole("tab", { name: MAIN_SECTIONS.notices.title })).toBeNull();
+    expect(screen.getByRole("tab", { name: MAIN_SECTIONS.events.title }).getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByText("성가대 연습")).toBeDefined();
+    expect(screen.queryByText("전교인 수련회 안내")).toBeNull();
+  });
+
+  it("일정이 교인만이면 일정 탭이 없다(대조: 공지 탭은 있다)", () => {
+    render(<NewsSection notices={notices} events={events} showEvents={false} />);
+    expect(screen.queryByRole("tab", { name: MAIN_SECTIONS.events.title })).toBeNull();
+    expect(screen.getByRole("tab", { name: MAIN_SECTIONS.notices.title })).toBeDefined();
+  });
+
+  it("대조: 둘 다 누구나면 탭 2개, 공지가 비어 있으면 지금처럼 '등록된 공지가 없습니다'", () => {
+    render(<NewsSection notices={[]} events={events} showNotices showEvents />);
+    expect(screen.getAllByRole("tab")).toHaveLength(2);
+    expect(screen.getByText(MAIN_SECTIONS.notices.empty)).toBeDefined();
+  });
 });

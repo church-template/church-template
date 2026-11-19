@@ -8,6 +8,7 @@ import { typo } from "@/constants/typography";
 import { formatDate } from "@/lib/date";
 import { apiUrl } from "@/lib/auth/apiBase";
 import { mediaSrc } from "@/lib/mediaUrl";
+import { MembersOnlyBadge } from "@/components/visibility/MembersOnlyBadge";
 import type { GalleryAlbumCardResponse } from "@/lib/api/types";
 
 const focusRing =
@@ -28,10 +29,11 @@ export function AlbumCard({ album }: { album: GalleryAlbumCardResponse }) {
         {/* fill 모드는 부모 relative 필수(next/image 규약) */}
         <div className="relative aspect-video overflow-hidden">
           {thumb !== null ? (
-            // 서명 주소는 next/image 최적화 불가(remotePatterns의 URL 패턴이 쿼리스트링을 막고, 31일 최적화 캐시가 만료 뒤에도 내줄 수 있음) → unoptimized
+            // 항상 unoptimized — 서명 주소는 remotePatterns가 쿼리스트링을 막고, 무서명 주소도 공개 범위가 바뀔 수 있는데
+            // 31일 최적화 캐시는 지울 방법이 없어 교인만으로 바꾼 뒤에도 내준다(스펙 6.6-16).
             <Image
               src={thumb}
-              unoptimized={album.thumbnailUrl != null}
+              unoptimized
               alt=""
               fill
               sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
@@ -44,7 +46,10 @@ export function AlbumCard({ album }: { album: GalleryAlbumCardResponse }) {
           )}
         </div>
         <div className="p-xl">
-          <h3 className={cn(typo.titleMd, "text-ink")}>{album.title}</h3>
+          <div className="flex flex-wrap items-center gap-xs">
+            <h3 className={cn(typo.titleMd, "text-ink")}>{album.title}</h3>
+            {album.membersOnly ? <MembersOnlyBadge /> : null}
+          </div>
           <p className={cn(typo.datetime, "mt-xxs text-muted")}>
             {formatDate(album.createdAt)} · 사진 {album.photoCount}장
             {album.author ? ` · ${album.author}` : ""}

@@ -3,8 +3,9 @@ import type { MainResponse } from "./types";
 
 // 메인 통합 조회(공개, 인증 불필요) — 서버 컴포넌트 전용.
 // revalidate 60 = fetch 데이터 캐시 TTL. 백엔드 Redis TTL 60s와 동기(백엔드 답변 F).
+// main 태그 = 공개 범위·설교 교인만 변경 직후 즉시 무효화 연결점(revalidateVisibility·revalidateMain).
 export async function getMain(): Promise<MainResponse> {
-  const res = await fetch(apiUrl("/api/main"), { next: { revalidate: 60 } });
+  const res = await fetch(apiUrl("/api/main"), { next: { revalidate: 60, tags: ["main"] } });
   if (!res.ok) {
     // 던지면 page의 getMain().catch가 null로 흡수해 소식 영역에만 폴백(MainFeedsError)을 그린다.
     // Hero·연혁·사역·예배시간·CTA·푸터는 영향받지 않는다(스펙 D4: 루트 error.tsx 위임 → 장애 격리로 갱신).

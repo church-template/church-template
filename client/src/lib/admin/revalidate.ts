@@ -25,3 +25,15 @@ export async function revalidateTags() {
 export async function revalidateDepartments() {
   updateTag("departments");
 }
+
+// 공개 범위 저장 직후: 설정 자체 + 그 설정을 따르는 서버 캐시(공지·일정·주보 목록, 홈).
+// sitemap·RSS(revalidate 86400)도 이 태그의 조회를 쓰므로 함께 만료된다(스펙 6.6-15).
+// 기존 revalidateTags()는 태그 도메인용이라 새 함수로 둔다.
+export async function revalidateVisibility() {
+  for (const tag of ["visibility", "notices", "events", "bulletins", "main"]) updateTag(tag);
+}
+
+// 설교 한 편의 교인만 변경 직후 — 홈 캐시(60초)에 제목이 남지 않게.
+export async function revalidateMain() {
+  updateTag("main");
+}

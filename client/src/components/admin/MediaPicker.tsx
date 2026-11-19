@@ -89,8 +89,9 @@ export function MediaPicker({ open, onOpenChange, accept, multiple = false, onCo
                     {accept === "image" ? (
                       // fill 모드는 부모 relative 필수(next/image 규약). 다이얼로그 셀 폭 근사 sizes=200px.
                       <span className="relative block aspect-square w-full overflow-hidden rounded-md">
-                        {/* 서명 주소(m.url)는 최적화 불가·만료 위험 → unoptimized */}
-                        <Image src={mediaSrc(m.id, m.url)} unoptimized={m.url !== undefined} alt={m.filename} fill sizes="200px" className="object-cover" />
+                        {/* 항상 unoptimized: 서명 주소는 만료되고, 무서명 파일도 공개 범위가 바뀌면 교인 전용이 된다
+                            — 최적화 캐시(31일)는 지울 수 없다(스펙 6.6-16). */}
+                        <Image src={mediaSrc(m.id, m.url)} unoptimized alt={m.filename} fill sizes="200px" className="object-cover" />
                       </span>
                     ) : (
                       <span className={cn(typo.bodySm, "block truncate p-sm text-ink")}>{m.filename}</span>

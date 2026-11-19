@@ -35,6 +35,21 @@ describe("설교 어드민 API", () => {
     });
   });
 
+  it("patchSermon은 membersOnly와 version을 body에 그대로 보낸다", async () => {
+    apiMutateMock.mockResolvedValue({ id: 7 });
+    await patchSermon(7, { membersOnly: true, version: 3 });
+    expect(apiMutateMock).toHaveBeenCalledWith("/api/admin/sermons/7", {
+      method: "PATCH",
+      body: { membersOnly: true, version: 3 },
+    });
+  });
+
+  it("createSermon은 membersOnly를 body에 싣는다", async () => {
+    apiMutateMock.mockResolvedValue({ id: 7 });
+    await createSermon({ title: "t", preacher: "p", preachedAt: "2026-06-01", membersOnly: true });
+    expect(apiMutateMock.mock.calls[0][1].body.membersOnly).toBe(true);
+  });
+
   it("deleteSermon은 DELETE /{id}", async () => {
     apiMutateMock.mockResolvedValue(undefined);
     await deleteSermon(7);

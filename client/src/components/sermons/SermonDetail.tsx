@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { DetailSkeleton } from "@/components/common/DetailSkeleton";
 import { MarkdownContent } from "@/components/common/MarkdownContent";
+import { MemberAccessNotice, accessNoticeReason } from "@/components/common/MemberGate";
+import { MembersOnlyBadge } from "@/components/visibility/MembersOnlyBadge";
 import { SermonVideo } from "./SermonVideo";
 import { SermonAudio } from "./SermonAudio";
 import { SermonDetailActions } from "./SermonAdminActions";
@@ -15,7 +17,9 @@ import { useSermon } from "./queries";
 // 상세 클라이언트 — 영상 우선 레이아웃(스펙 D6)·클릭 메타로 목록 필터(D9)는 RSC 시절 그대로.
 // 조회수+1 부수효과는 fetchSermon GET에 포함(쿼리 캐시 내 재방문은 미증가 — 갤러리와 동일 시맨틱).
 export function SermonDetail({ id }: { id: number }) {
-  const { data: sermon, isPending, isError, refetch } = useSermon(id);
+  const { data: sermon, isPending, isError, error, refetch } = useSermon(id);
+  // 누구나 메뉴의 교인 전용 설교를 방문자가 열면 401 → 로그인 안내(스토리보드 E)
+  const accessReason = accessNoticeReason(error);
 
   if (isPending) {
     return (
@@ -24,6 +28,7 @@ export function SermonDetail({ id }: { id: number }) {
       </div>
     );
   }
+  if (accessReason) return <MemberAccessNotice reason={accessReason} domainLabel="설교" />;
   if (isError || !sermon) {
     return (
       <div className="mt-lg flex flex-col items-start gap-sm">
@@ -42,7 +47,10 @@ export function SermonDetail({ id }: { id: number }) {
         </div>
       ) : null}
 
-      <h1 className={cn(typo.titleLg, "mt-lg text-ink")}>{sermon.title}</h1>
+      <div className="mt-lg flex flex-wrap items-center gap-sm">
+        <h1 className={cn(typo.titleLg, "text-ink")}>{sermon.title}</h1>
+        {sermon.membersOnly ? <MembersOnlyBadge /> : null}
+      </div>
       <SermonDetailActions id={sermon.id} />
 
       <p className={cn(typo.datetime, "mt-xs text-muted")}>
@@ -88,7 +96,8 @@ export function SermonDetail({ id }: { id: number }) {
       ) : null}
 
       <div className="mt-lg border-t border-hairline" />
-      <MarkdownContent source={sermon.content} className="mt-lg" />
+      {/* 교인만 설교의 본문 이미지는 무서명 주소가 404 — 응답의 서명 주소 맵으로 그린다(스펙 6.2) */}
+      <MarkdownContent source={sermon.content} mediaUrls={sermon.mediaUrls} className="mt-lg" />
     </>
   );
 }

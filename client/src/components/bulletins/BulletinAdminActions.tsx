@@ -2,7 +2,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { Button, buttonVariants } from "@/components/ui/Button";
 import { RequirePermission } from "@/components/admin/RequirePermission";
@@ -29,12 +29,14 @@ export function BulletinListAction() {
 // 행 액션(앵커 밖 형제). 수정=전용 페이지 링크, 삭제=확인 다이얼로그.
 export function BulletinRowActions({ b }: { b: BulletinCardResponse }) {
   const router = useRouter();
+  const qc = useQueryClient();
   const [delOpen, setDelOpen] = useState(false);
   const remove = useMutation({
     mutationFn: () => deleteBulletin(b.id),
     onError: adminOnError(),
     onSuccess: async () => {
       await revalidateBulletins();
+      qc.invalidateQueries({ queryKey: ["bulletins"] }); // 교인만 모드의 브라우저 조회 목록도 갱신(6.6-13)
       notify.success("삭제했습니다.");
       setDelOpen(false);
       router.refresh();
