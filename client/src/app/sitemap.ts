@@ -4,11 +4,13 @@ import { DEPARTMENTS, allDepartmentSlugs } from "@/constants/departments";
 import { getNotices } from "@/lib/api/notices";
 import { getEvents } from "@/lib/api/events";
 import { parseServerDate } from "@/lib/date";
+import { getVisibility, membersOnlyListPaths, resolveVisibility } from "@/lib/api/visibility";
 
 // 하루 1회 재생성 — 새 공지·행사가 다음날 sitemap에 반영된다(sitemap = 캐시되는 Route Handler).
+// 단, 설정 조회(getVisibility, revalidate 60)가 라우트 주기를 60초로 낮추고, 저장 시엔 태그 무효화로 즉시 바뀐다.
 export const revalidate = 86400;
 
-// 공개 정적 라우트. 설교·갤러리·챌린지는 회원 전용 전환으로 수집 제외(스펙 1장).
+// 공개 정적 라우트. 설교·갤러리는 공개 범위 설정과 무관하게, 챌린지는 회원 전용이라 수집 제외(스펙 6.3).
 const PUBLIC_PATHS = [
   "",
   "/about",
@@ -81,9 +83,12 @@ async function eventEntries(): Promise<MetadataRoute.Sitemap> {
 
 // /sitemap.xml 자동 생성. 부서 상세는 프론트 상수(DEPARTMENTS) 구동이라 백엔드 없이 정적으로 포함한다
 // (allDepartmentSlugs는 generateStaticParams와 같은 헬퍼라 sitemap URL이 실제 라우트와 정확히 일치).
+// 교인만인 공지·일정·주보는 목록 경로와 상세를 넣지 않는다(서버도 읽지 않는다).
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const levels = resolveVisibility(await getVisibility());
+  const hidden = new Set(membersOnlyListPaths(levels));
   const lastModified = new Date();
-  const staticEntries = PUBLIC_PATHS.map((path) => ({
+  const staticEntries = PUBLIC_PATHS.filter((path) => !hidden.has(path)).map((path) => ({
     url: `${CHURCH_URL}${path}`,
     lastModified,
   }));
@@ -92,8 +97,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     lastModified,
   }));
   const [notices, events] = await Promise.all([
-    noticeEntries(),
-    eventEntries(),
+    levels.notices === "PUBLIC" ? noticeEntries() : [],
+    levels.events === "PUBLIC" ? eventEntries() : [],
   ]);
   return [...staticEntries, ...deptEntries, ...notices, ...events];
 }

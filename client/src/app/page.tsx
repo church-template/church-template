@@ -8,6 +8,7 @@ import { MainFeedsError } from "@/components/main/MainFeedsError";
 import { CtaBand } from "@/components/shell/CtaBand";
 import { SiteFooter } from "@/components/shell/SiteFooter";
 import { getMain } from "@/lib/api/main";
+import { getVisibility, resolveVisibility } from "@/lib/api/visibility";
 import { HistoryBand } from "@/components/main/HistoryBand";
 import { MinistryCards } from "@/components/main/MinistryCards";
 import { CollageStory } from "@/components/main/CollageStory";
@@ -27,10 +28,18 @@ export default async function Home() {
   // force-dynamic과 달리 fetch 데이터 캐시(revalidate 60)는 그대로 동작 — 백엔드 부하는 60s 캐시가 흡수.
   await connection();
   // 소식 fetch만 격리: 실패해도 여기서 null로 흡수해 Hero·연혁·사역·예배시간·CTA·푸터는 그대로 산다.
-  const main = await getMain().catch((error: unknown) => {
-    console.error(error); // 서버 로깅 지점, 화면 비노출(app/error.tsx 관례와 동일)
-    return null;
-  });
+  // 설정 조회는 실패해도 null(폴백 = 지금 동작)이라 따로 격리하지 않는다.
+  const [main, visibility] = await Promise.all([
+    getMain().catch((error: unknown) => {
+      console.error(error); // 서버 로깅 지점, 화면 비노출(app/error.tsx 관례와 동일)
+      return null;
+    }),
+    getVisibility(),
+  ]);
+  // 교인만인 공지·일정은 홈 "교회 소식"에서 탭째 뺀다(스펙 5.4). 설교 섹션은 그대로(글 단위 교인만은 백엔드가 뺀다).
+  const levels = resolveVisibility(visibility);
+  const showNotices = levels.notices === "PUBLIC";
+  const showEvents = levels.events === "PUBLIC";
 
   // 줄 단위 카피 배열 → block span 합성(가이드 13.3의 "\n" 이슈 원천 차단, 줄별 텍스트 노드 유지)
   const caption = HERO_CAPTION.map((line, i) => (
@@ -54,7 +63,14 @@ export default async function Home() {
         {main ? (
           <>
             <SermonSection sermons={main.sermons} now={new Date()} />
-            <NewsSection notices={main.notices} events={main.upcomingEvents} />
+            {showNotices || showEvents ? (
+              <NewsSection
+                notices={main.notices}
+                events={main.upcomingEvents}
+                showNotices={showNotices}
+                showEvents={showEvents}
+              />
+            ) : null}
           </>
         ) : (
           <MainFeedsError />
