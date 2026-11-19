@@ -22,38 +22,27 @@ vi.mock("@/components/admin/RequirePermission", () => ({
 vi.mock("@/components/admin/EditGate", () => ({
   EditAccessDenied: () => <div data-testid="access-denied" />,
 }));
-vi.mock("@/components/notices/NoticeForm", () => ({
-  NoticeForm: ({ mode, initial }: { mode: string; initial?: unknown }) => (
-    <div data-testid="notice-form" data-mode={mode} data-id={(initial as { id?: number } | undefined)?.id} />
-  ),
+// 수정 화면은 설정과 무관하게 브라우저에서 읽는다(교인만이면 서버가 읽을 수 없다, 스펙 6.3).
+vi.mock("@/components/notices/NoticeMemberViews", () => ({
+  NoticeEditLoader: ({ id }: { id: number }) => <div data-testid="notice-edit-loader" data-id={id} />,
 }));
 
 import NoticeEditPage from "./page";
 
 afterEach(() => vi.clearAllMocks());
 
-const base = {
-  id: 5, title: "2026 여름 수련회 안내", content: "# 안내\n수련회 일정입니다",
-  isPinned: false, viewCount: 142, createdAt: "2026-06-01T09:00:00",
-  updatedAt: "2026-06-01T09:00:00", version: 0,
-  tags: [{ id: 3, name: "행사" }], author: "홍길동",
-};
-
 describe("NoticeEditPage (수정)", () => {
-  it("유효한 id면 getNotice 호출 후 NoticeForm(edit 모드) 렌더", async () => {
-    getNotice.mockResolvedValueOnce(base);
+  it("수정 화면은 설정과 무관하게 NoticeEditLoader를 그리고 서버 조회하지 않는다", async () => {
     render(await NoticeEditPage({ params: Promise.resolve({ id: "5" }) }));
-    expect(getNotice).toHaveBeenCalledWith(5);
-    const form = screen.getByTestId("notice-form");
-    expect(form.getAttribute("data-mode")).toBe("edit");
-    expect(form.getAttribute("data-id")).toBe("5");
+    expect(screen.getByTestId("notice-edit-loader").getAttribute("data-id")).toBe("5");
+    expect(getNotice).not.toHaveBeenCalled();
   });
 
-  it("없는 공지(null)면 notFound", async () => {
-    getNotice.mockResolvedValueOnce(null);
-    await expect(
-      NoticeEditPage({ params: Promise.resolve({ id: "99" }) }),
-    ).rejects.toThrow("NEXT_NOT_FOUND");
+  // 기존 "없는 공지(null)면 notFound"의 기대를 바꾼 것 — 없는 글 판단은 브라우저 로더가 응답으로 한다(NoticeMemberViews.test).
+  it("없는 공지 판단은 서버가 하지 않는다(notFound 대신 로더)", async () => {
+    render(await NoticeEditPage({ params: Promise.resolve({ id: "99" }) }));
+    expect(screen.getByTestId("notice-edit-loader").getAttribute("data-id")).toBe("99");
+    expect(getNotice).not.toHaveBeenCalled();
   });
 
   it("비숫자 id면 notFound(fetch 미호출)", async () => {

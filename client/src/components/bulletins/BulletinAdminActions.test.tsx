@@ -39,3 +39,19 @@ describe("BulletinRowActions", () => {
     expect(screen.getByRole("link", { name: "주보 수정" }).getAttribute("href")).toBe("/bulletins/7/edit");
   });
 });
+
+describe("BulletinRowActions 쿼리 무효화(#198)", () => {
+  it("주보 삭제 성공 시 ['bulletins'] 무효화", async () => {
+    deleteMock.mockResolvedValue(undefined);
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const invalidateSpy = vi.spyOn(qc, "invalidateQueries");
+    render(
+      <QueryClientProvider client={qc}>
+        <BulletinRowActions b={{ id: 7, title: "주보", serviceDate: "2026-06-07", mediaId: 1, createdAt: "2026-06-07T00:00:00" }} />
+      </QueryClientProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "주보 삭제" }));
+    fireEvent.click(screen.getByRole("button", { name: "삭제" }));
+    await waitFor(() => expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["bulletins"] }));
+  });
+});

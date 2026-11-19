@@ -3,7 +3,7 @@
 
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -51,6 +51,7 @@ function toBody(v: EventFormValues): EventCreateRequest {
 // 일정 등록·수정 페이지 폼 — 공지(NoticeForm)와 동형. 다이얼로그였던 시절의 open/onSaved는 페이지 전환으로 불필요.
 export function EventForm({ mode, initial }: EventFormProps) {
   const router = useRouter();
+  const qc = useQueryClient();
   const {
     register,
     handleSubmit,
@@ -90,11 +91,15 @@ export function EventForm({ mode, initial }: EventFormProps) {
     onError: adminOnError({
       onFieldErrors: (fes) =>
         fes.forEach((fe) => setError(fe.field as keyof EventFormValues, { message: fe.reason })),
-      onReedit: () => router.refresh(),
+      // 409 재편집: 상세 쿼리 무효화 → EventEditLoader가 최신 version으로 폼을 다시 마운트한다(keyed).
+      onReedit: () => qc.invalidateQueries({ queryKey: initial ? ["event", initial.id] : ["events"] }),
     }),
     onSuccess: async (id) => {
       // updateTag 서버 액션으로 events 태그 ISR 캐시를 즉시 무효화한 뒤 알림·상세 이동.
       await revalidateEvents();
+      // 교인만 모드의 브라우저 조회 경로도 새 내용을 받게(6.6-13).
+      qc.invalidateQueries({ queryKey: ["events"] });
+      qc.invalidateQueries({ queryKey: ["event", id] });
       notify.success(SAVED_NOTICE);
       router.push(`/events/${id}`);
     },
@@ -160,6 +165,7 @@ export function EventForm({ mode, initial }: EventFormProps) {
               onChange={field.onChange}
               id="event-description"
               rows={5}
+              mediaUrls={initial?.mediaUrls}
             />
           )}
         />

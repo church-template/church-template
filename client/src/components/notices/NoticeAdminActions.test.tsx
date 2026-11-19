@@ -20,6 +20,7 @@ vi.mock("@/lib/notify", () => ({ notify: { success: notifySuccessMock, error: vi
 vi.mock("@/lib/admin/revalidate", () => ({ revalidateNotices: revalidateNoticesMock }));
 
 import { NoticeDetailActions } from "./NoticeAdminActions";
+import { ApiError } from "@/lib/auth/apiError";
 
 let qc: QueryClient;
 beforeEach(() => {
@@ -55,5 +56,35 @@ describe("NoticeDetailActions", () => {
     await waitFor(() => expect(revalidateNoticesMock).toHaveBeenCalled());
     expect(notifySuccessMock).toHaveBeenCalledWith("삭제했습니다.");
     expect(pushMock).toHaveBeenCalledWith("/notices");
+  });
+});
+
+// 교인만 모드(#198) — 브라우저 조회 경로는 updateTag·router.refresh로 갱신되지 않는다. 쿼리를 함께 무효화한다(6.6-13).
+describe("NoticeDetailActions 쿼리 무효화", () => {
+  it("고정 토글 성공 시 revalidateNotices와 함께 ['notices']·['notice',id] 쿼리를 무효화한다", async () => {
+    patchNoticeMock.mockResolvedValue({ id: 5 });
+    const invalidateSpy = vi.spyOn(qc, "invalidateQueries");
+    renderWithQc(<NoticeDetailActions id={5} version={2} isPinned={false} />);
+    fireEvent.click(screen.getByLabelText("상단 고정"));
+    await waitFor(() => expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["notice", 5] }));
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["notices"] });
+    expect(revalidateNoticesMock).toHaveBeenCalled();
+  });
+  it("409면 ['notice', id]를 무효화해 최신 version을 다시 받는다", async () => {
+    patchNoticeMock.mockRejectedValue(new ApiError(409, "OPTIMISTIC_LOCK_CONFLICT", undefined));
+    const invalidateSpy = vi.spyOn(qc, "invalidateQueries");
+    renderWithQc(<NoticeDetailActions id={5} version={2} isPinned={false} />);
+    fireEvent.click(screen.getByLabelText("상단 고정"));
+    await waitFor(() => expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["notice", 5] }));
+    expect(invalidateSpy).not.toHaveBeenCalledWith({ queryKey: ["notices"] });
+  });
+  it("삭제 성공 시 ['notices'] 무효화", async () => {
+    deleteNoticeMock.mockResolvedValue(undefined);
+    const invalidateSpy = vi.spyOn(qc, "invalidateQueries");
+    renderWithQc(<NoticeDetailActions id={5} version={2} isPinned={false} />);
+    fireEvent.click(screen.getByRole("button", { name: "공지 삭제" }));
+    const confirmButtons = screen.getAllByRole("button", { name: "삭제" });
+    fireEvent.click(confirmButtons[confirmButtons.length - 1]);
+    await waitFor(() => expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["notices"] }));
   });
 });

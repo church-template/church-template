@@ -3,25 +3,27 @@ import type { Metadata } from "next";
 import { Container } from "@/components/shell/Container";
 import { typo } from "@/constants/typography";
 import { cn } from "@/lib/utils";
-import { formatMonthDay, groupByMonth } from "@/lib/monthGroups";
 import { getNotices, type NoticeListParams } from "@/lib/api/notices";
 import { getTags } from "@/lib/api/tags";
-import { MonthSection } from "@/components/common/MonthSection";
-import { MonthListRow } from "@/components/common/MonthListRow";
-import { TagFilter } from "@/components/common/TagFilter";
-import { Pagination } from "@/components/common/Pagination";
-import { EmptyState } from "@/components/common/EmptyState";
-import { SearchPill } from "@/components/common/SearchPill";
+import { VisibilityStatusLink } from "@/components/visibility/VisibilityStatusLink";
+import { getVisibility, loadPublic, resolveVisibility } from "@/lib/api/visibility";
+import { MemberGate } from "@/components/common/MemberGate";
 import { NoticeListAction } from "@/components/notices/NoticeAdminActions";
+import { NoticeListView } from "@/components/notices/NoticeListView";
+import { NoticeListClient } from "@/components/notices/NoticeMemberViews";
 import { CHURCH_NAME } from "@/constants/church";
 import { NEWS_LIST } from "@/constants/news";
-import type { NoticeCardResponse } from "@/lib/api/types";
 
-export const metadata: Metadata = {
-  title: NEWS_LIST.noticeTitle,
-  description: `${CHURCH_NAME} 공지사항 — 교회 소식과 안내를 확인하세요.`,
-  alternates: { canonical: "/notices" },
-};
+// 교인만이면 목록도 색인하지 않는다(robots.txt 차단과 이중 방어). 설정을 못 읽으면 지금처럼 색인 허용.
+export async function generateMetadata(): Promise<Metadata> {
+  const levels = resolveVisibility(await getVisibility());
+  return {
+    title: NEWS_LIST.noticeTitle,
+    description: `${CHURCH_NAME} 공지사항 — 교회 소식과 안내를 확인하세요.`,
+    alternates: { canonical: "/notices" },
+    ...(levels.notices === "MEMBERS" ? { robots: { index: false, follow: false } } : {}),
+  };
+}
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -46,18 +48,9 @@ function parseParams(sp: SearchParams): NoticeListParams {
   };
 }
 
-const row = (n: NoticeCardResponse) => (
-  <MonthListRow
-    key={n.id}
-    href={`/notices/${n.id}`}
-    date={formatMonthDay(n.createdAt)}
-    title={n.title}
-    meta={n.author}
-  />
-);
-
-// 공개 공지 목록 — 고정 공지는 맨 위에 따로 모으고, 나머지는 월별 목록(month-section, 설교 목록과 같은 결).
-// searchParams 접근 → 동적 렌더. 목록·태그 병렬 fetch. 서버 정렬(고정 우선·최신순)을 그대로 쓴다.
+// 공지 목록. 메뉴가 누구나면 서버 렌더(ISR 태그 notices), 교인만이면(또는 낡은 설정으로 서버 조회가 401/403이면)
+// 서버는 공지를 읽지 않고 NOTICE_VIEW 게이트 + 브라우저 조회로 그린다. 태그는 공개라 두 경로 모두 서버가 읽는다.
+// searchParams 접근 → 동적 렌더.
 export default async function NoticesPage({
   searchParams,
 }: {
@@ -65,44 +58,26 @@ export default async function NoticesPage({
 }) {
   const sp = await searchParams;
   const params = parseParams(sp);
-  const [data, tags] = await Promise.all([getNotices(params), getTags()]);
-  const pinned = data.content.filter((n) => n.isPinned);
-  const rest = data.content.filter((n) => !n.isPinned);
+  const visibility = await getVisibility();
+  const levels = resolveVisibility(visibility);
+  const [loaded, tags] = await Promise.all([loadPublic(levels.notices, () => getNotices(params)), getTags()]);
 
   return (
     <Container as="section" className="py-section">
       <div className="flex items-center justify-between gap-base">
-        <h1 className={cn(typo.displayMd, "text-ink")}>{NEWS_LIST.noticeTitle}</h1>
+        <div className="flex flex-wrap items-center gap-x-base">
+          <h1 className={cn(typo.displayMd, "text-ink")}>{NEWS_LIST.noticeTitle}</h1>
+          <VisibilityStatusLink level={visibility ? visibility.notices : null} />
+        </div>
         <NoticeListAction />
       </div>
-
-      <div className="mt-lg flex flex-col gap-base">
-        <SearchPill placeholder="제목" ariaLabel="공지 검색" />
-        <TagFilter tags={tags} />
-      </div>
-
-      {data.content.length === 0 ? (
-        <EmptyState message={NEWS_LIST.noticeEmpty} className="mt-xl" />
+      {loaded ? (
+        <NoticeListView data={loaded.data} tags={tags} />
       ) : (
-        <div className="mt-xl flex flex-col gap-xl">
-          {pinned.length > 0 ? (
-            <MonthSection id="pinned" label={NEWS_LIST.pinnedHeading}>
-              {pinned.map(row)}
-            </MonthSection>
-          ) : null}
-          {groupByMonth(rest, (n) => n.createdAt).map((g) => (
-            <MonthSection key={g.key} id={g.key} label={g.label}>
-              {g.items.map(row)}
-            </MonthSection>
-          ))}
-        </div>
+        <MemberGate permission="NOTICE_VIEW" domainLabel={NEWS_LIST.noticeTitle}>
+          <NoticeListClient params={params} tags={tags} />
+        </MemberGate>
       )}
-
-      {data.page.totalPages > 1 ? (
-        <div className="mt-xl">
-          <Pagination page={data.page} />
-        </div>
-      ) : null}
     </Container>
   );
 }

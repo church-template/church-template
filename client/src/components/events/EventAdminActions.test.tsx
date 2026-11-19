@@ -70,3 +70,15 @@ describe("EventDetailActions", () => {
     expect(screen.getByRole("link", { name: "일정 수정" }).getAttribute("href")).toBe("/events/7/edit");
   });
 });
+
+describe("EventDetailActions 쿼리 무효화(#198)", () => {
+  it("삭제 성공 시 ['events']·['event',id] 쿼리를 무효화한다", async () => {
+    deleteEventMock.mockResolvedValue(undefined);
+    const invalidateSpy = vi.spyOn(qc, "invalidateQueries");
+    renderWithQc(<EventDetailActions event={event} onClose={onCloseMock} />);
+    fireEvent.click(screen.getByRole("button", { name: "일정 삭제" }));
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "삭제" }));
+    await waitFor(() => expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["events"] }));
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["event", 7] });
+  });
+});

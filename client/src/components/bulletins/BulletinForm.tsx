@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { typo } from "@/constants/typography";
@@ -22,13 +22,14 @@ import { bulletinSchema, type BulletinFormValues } from "./schemas";
 
 export interface BulletinFormProps {
   mode: "create" | "edit";
-  // edit 시 RSC(getBulletin no-store)가 최신 값·version까지 내려준다 — 클라 시드 불필요.
+  // edit 시 BulletinEditLoader(브라우저 조회)가 최신 값·version을 시드한다.
   initial?: BulletinDetailResponse;
 }
 
 // 주보 등록·수정 페이지 폼 — 공지(NoticeForm)와 동형. PDF 선택은 MediaPicker(Dialog) 재사용.
 export function BulletinForm({ mode, initial }: BulletinFormProps) {
   const router = useRouter();
+  const qc = useQueryClient();
   const [pickerOpen, setPickerOpen] = useState(false);
   const { register, handleSubmit, setValue, watch, setError, formState: { errors } } = useForm<BulletinFormValues>({
     resolver: zodResolver(bulletinSchema),
@@ -49,11 +50,14 @@ export function BulletinForm({ mode, initial }: BulletinFormProps) {
         : createBulletin({ title: v.title, serviceDate: v.serviceDate, mediaId: v.mediaId }),
     onError: adminOnError({
       onFieldErrors: (fes) => fes.forEach((fe) => setError(fe.field as keyof BulletinFormValues, { message: fe.reason })),
-      // 409 재편집: RSC가 initial을 다시 내려주도록 새로고침(다이얼로그 시절의 수동 재시드 대체, NoticeForm 동형).
-      onReedit: () => router.refresh(),
+      // 409 재편집: 상세 쿼리 무효화 → BulletinEditLoader가 최신 version으로 폼을 다시 마운트한다(keyed).
+      onReedit: () => qc.invalidateQueries({ queryKey: initial ? ["bulletin", initial.id] : ["bulletins"] }),
     }),
     onSuccess: async () => {
       await revalidateBulletins();
+      // 교인만 모드의 브라우저 조회 경로도 새 내용을 받게(6.6-13).
+      qc.invalidateQueries({ queryKey: ["bulletins"] });
+      if (initial) qc.invalidateQueries({ queryKey: ["bulletin", initial.id] });
       notify.success("저장했습니다.");
       // 주보는 상세 페이지가 없다(행=PDF 새 탭) — 목록으로 복귀.
       router.push("/bulletins");

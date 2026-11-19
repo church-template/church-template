@@ -4,7 +4,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { RequirePermission } from "@/components/admin/RequirePermission";
 import { DeleteConfirmDialog } from "@/components/admin/DeleteConfirmDialog";
 import { Button, buttonVariants } from "@/components/ui/Button";
@@ -33,6 +33,7 @@ export function EventListAction() {
 // onClose: 삭제 성공 후 호출하는 콜백 — 캘린더 모달 닫기 등 부모 정리에 쓴다.
 export function EventDetailActions({ event, onClose }: { event: EventDetailResponse; onClose?: () => void }) {
   const router = useRouter();
+  const qc = useQueryClient();
   const [delOpen, setDelOpen] = useState(false);
 
   const remove = useMutation({
@@ -41,6 +42,9 @@ export function EventDetailActions({ event, onClose }: { event: EventDetailRespo
     onSuccess: async () => {
       // updateTag 서버 액션으로 events 캐시 즉시 무효화 후 모달 닫기·부모 콜백·새로고침.
       await revalidateEvents();
+      // 교인만 모드의 브라우저 조회 캘린더·상세도 갱신(6.6-13).
+      qc.invalidateQueries({ queryKey: ["events"] });
+      qc.invalidateQueries({ queryKey: ["event", event.id] });
       notify.success("삭제했습니다.");
       setDelOpen(false);
       onClose?.();

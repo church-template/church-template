@@ -17,6 +17,7 @@ vi.mock("@/lib/api/tags", () => ({ getTags: vi.fn().mockResolvedValue([]) }));
 vi.mock("@/lib/admin/revalidate", () => ({ revalidateNotices: revalidateNoticesMock }));
 
 import { NoticeForm } from "./NoticeForm";
+import { ApiError } from "@/lib/auth/apiError";
 
 let qc: QueryClient;
 beforeEach(() => { qc = new QueryClient({ defaultOptions: { queries: { retry: false } } }); });
@@ -63,5 +64,34 @@ describe("NoticeForm", () => {
       expect(updateNoticeMock).toHaveBeenCalledWith(5, expect.objectContaining({ version: 2 })),
     );
     await waitFor(() => expect(revalidateNoticesMock).toHaveBeenCalled());
+  });
+});
+
+describe("NoticeForm 교인만 모드(#198)", () => {
+  const initial = {
+    id: 5, title: "원본", content: "![](media:42)", isPinned: false, viewCount: 0,
+    createdAt: "2026-06-01T00:00:00", updatedAt: "2026-06-01T00:00:00",
+    version: 2, tags: [], author: null, mediaUrls: { "42": "/api/media/42?exp=1&sig=n" },
+  };
+  it("저장 성공 시 ['notices']·['notice',id]를 무효화한다", async () => {
+    updateNoticeMock.mockResolvedValue({ id: 5 });
+    revalidateNoticesMock.mockResolvedValue(undefined);
+    const invalidateSpy = vi.spyOn(qc, "invalidateQueries");
+    renderForm(<NoticeForm mode="edit" initial={initial} />);
+    fireEvent.click(screen.getByRole("button", { name: "저장" }));
+    await waitFor(() => expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["notice", 5] }));
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["notices"] });
+  });
+  it("409면 ['notice', id]를 무효화한다(로더가 최신 version으로 다시 마운트)", async () => {
+    updateNoticeMock.mockRejectedValue(new ApiError(409, "OPTIMISTIC_LOCK_CONFLICT", undefined));
+    const invalidateSpy = vi.spyOn(qc, "invalidateQueries");
+    renderForm(<NoticeForm mode="edit" initial={initial} />);
+    fireEvent.click(screen.getByRole("button", { name: "저장" }));
+    await waitFor(() => expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["notice", 5] }));
+  });
+  it("공지 편집 미리보기에 mediaUrls를 넘긴다", () => {
+    const { container } = renderForm(<NoticeForm mode="edit" initial={initial} />);
+    fireEvent.mouseDown(screen.getByRole("tab", { name: "미리보기" }));
+    expect(container.querySelector("img")?.getAttribute("src")).toContain("sig=n");
   });
 });
