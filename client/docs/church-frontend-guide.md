@@ -38,8 +38,8 @@
 이 백엔드에는 **SMTP·이메일 인증이 없다.** 신원 확인은 관리자가 `MEMBER` 역할을 부여하는 것으로 대체된다.
 
 1. `POST /api/auth/signup`(공개, **201**) — 응답에 **토큰 없음**. `SignupResponse`(uuid·name·phone·roles)만. 가입 직후 로그인 상태가 아니므로 **프론트가 별도로 `login`을 호출**해야 한다.
-2. 가입 시 자동으로 `USER` 역할(권한 0)만 부여된다. 갤러리 등 회원 전용 기능은 아직 차단.
-3. 관리자가 `MEMBER` 역할을 부여하면(9장 아님, 7장 회원 관리) **교인 승인** 완료 → `GALLERY_VIEW`·`SERMON_VIEW` 획득.
+2. 가입 시 자동으로 `USER` 역할(권한 0)만 부여된다. `교인만`으로 정한 메뉴(2.3 공개 범위)와 교인만 설교·앨범은 아직 차단.
+3. 관리자가 `MEMBER` 역할을 부여하면(9장 아님, 7장 회원 관리) **교인 승인** 완료 → `GALLERY_VIEW`·`SERMON_VIEW`·`NOTICE_VIEW`·`EVENT_VIEW`·`BULLETIN_VIEW` 획득.
 
 **가입 폼에서 프론트가 미리 막아야 매끄러운 검증**: password ≥ 8자, `termsAgreed`·`privacyAgreed` **둘 다 true**(아니면 400), email은 선택(형식 검증), phone 중복은 서버가 **409 `DUPLICATE_RESOURCE`**.
 
@@ -132,8 +132,10 @@ async function authFetch(url: string, init: RequestInit = {}): Promise<Response>
 | `EVENT_WRITE` | 일정 작성/수정/삭제 | `/api/admin/events` |
 | `DEPT_WRITE` | 부서 작성/수정/삭제 | `/api/admin/departments` |
 | `GALLERY_WRITE` | 앨범·사진 생성/수정/삭제 | `/api/admin/gallery/**` |
-| `GALLERY_VIEW` | **갤러리 조회 자체**(회원 전용) | `/api/gallery/**` |
-| `SERMON_VIEW` | **설교 조회 자체**(회원 전용) | `GET /api/sermons`·`GET /api/sermons/{id}` |
+| `GALLERY_VIEW` | 갤러리 조회 — 메뉴가 `교인만`이면 전체, `누구나`면 교인만 앨범(2.3) | `/api/gallery/**` |
+| `SERMON_VIEW` | 설교 조회 — 메뉴가 `교인만`이면 전체, `누구나`면 교인만 설교(2.3) | `GET /api/sermons`·`GET /api/sermons/{id}` |
+| `NOTICE_VIEW`·`EVENT_VIEW`·`BULLETIN_VIEW` | 공지·일정·주보 조회 — 메뉴가 `교인만`일 때만 필요(2.3) | `GET /api/notices/**`·`/api/events/**`·`/api/bulletins/**` |
+| `VISIBILITY_MANAGE` | 공개 범위 설정 화면(`/mypage/manage/visibility`)·목록 제목 줄 상태 표시 | `PUT /api/admin/visibility` |
 | `BULLETIN_WRITE` | 주보 업로드/수정/삭제 | `/api/admin/bulletins` |
 | `MEDIA_MANAGE` | 미디어 라이브러리(업로드/목록/삭제) | `/api/admin/media` |
 | `TAG_MANAGE` | 태그 추가/수정/삭제 | `/api/admin/tags` |
@@ -141,18 +143,17 @@ async function authFetch(url: string, init: RequestInit = {}): Promise<Response>
 | `MEMBER_MANAGE` | 회원 조회·수정·비번초기화, 약관 일괄리셋 | `/api/members`(조회), `/api/admin/members/{uuid}`, `/api/admin/agreements/reset` |
 | `ROLE_MANAGE` | 역할/권한 관리, 회원 역할 부여/회수 | `/api/admin/roles`, `/api/admin/permissions`, `/api/admin/members/{uuid}/roles` |
 
-> **주의 — 경로만 보면 헷갈리는 곳**: 회원 조회 `GET /api/members`·`GET /api/members/{uuid}`는 `/api/admin/**`가 아니지만 **`MEMBER_MANAGE`로 메서드 보안**이 걸려 있다(경로 규칙상 공개로 보여도 실제 차단). 반대로 `GET /api/positions`, `GET /api/tags`, `GET /api/bulletins`, `GET /api/main`, `GET /api/media/{id}`는 **공개**다.
+> **주의 — 경로만 보면 헷갈리는 곳**: 회원 조회 `GET /api/members`·`GET /api/members/{uuid}`는 `/api/admin/**`가 아니지만 **`MEMBER_MANAGE`로 메서드 보안**이 걸려 있다(경로 규칙상 공개로 보여도 실제 차단). 반대로 `GET /api/positions`, `GET /api/tags`, `GET /api/main`, `GET /api/visibility`는 **공개**다. `GET /api/bulletins`·`GET /api/media/{id}`는 공개 범위 설정을 따른다(2.3·5.2).
 
 ### 2.3 경로 인가 3분법
 
 | 경로 | 규칙 | UI 함의 |
 |---|---|---|
 | `/api/admin/**` | **로그인만**(경로) + **메서드 `@PreAuthorize`**(권한) 2단 방어 | 로그인했어도 권한 없으면 403; 토큰 없이 호출 시 401 `INVALID_TOKEN` |
-| `/api/gallery/**` | **`GALLERY_VIEW` 필요**(회원 전용, 비공개) | 비로그인·`USER`만 보유 사용자는 차단 |
-| `GET /api/sermons`·`GET /api/sermons/{id}` | **`SERMON_VIEW` 필요**(회원 전용, 비공개) | 비로그인·`USER`만 보유 사용자는 차단 |
+| 공지·일정·주보·설교·갤러리 읽기 | **교회별 공개 범위 설정**(`GET /api/visibility`, 메뉴마다 `PUBLIC`=누구나 / `MEMBERS`=교인만). `교인만`이면 그 메뉴의 `*_VIEW` 필요. `누구나`여도 설교·앨범 한 건의 `membersOnly`는 `*_VIEW` 없는 요청의 목록에서 빠지고 상세는 401/403 | 비로그인·`USER`만 보유 사용자는 `교인만` 메뉴·글에서 차단. 토큰이 왔는데 무효면 401 `INVALID_TOKEN`(빈 `Bearer`는 보내지 않는다) |
 | 그 외 `/api/**` 읽기 | 공개 | 비로그인 노출 가능 |
 
-**갤러리·설교 회원전용 차단 UX**: 갤러리·설교 진입 시 토큰/`/members/me`에 `GALLERY_VIEW`/`SERMON_VIEW`가 없으면, 호출하지 말고 "교인 승인 후 이용 가능" 안내를 띄운다(공용 `MemberGate`). 그대로 호출하면 비로그인은 401 `INVALID_TOKEN`, 로그인+권한없음은 403 `ACCESS_DENIED`.
+**교인만 메뉴 차단 UX**: 페이지(서버 컴포넌트)가 `getVisibility()`(태그 `visibility`, 60초)로 설정을 읽는다. 메뉴가 `교인만`이면 공용 `MemberGate`(해당 `*_VIEW`)가 호출 전에 막고 로그인 / "교인 승인 후 이용 가능" 안내를 띄운다 — 공지·일정·주보는 이때 서버 렌더 대신 게이트 안 브라우저 조회(TanStack Query + `authFetch`)로 그린다. `누구나`면 게이트 없이 그린다. 들고 있는 설정이 낡아 조회가 401 `INVALID_TOKEN`/403 `ACCESS_DENIED`를 받으면(또는 교인만 글 상세를 열면) 같은 안내를 `errorCode`로 갈라 보인다. 설정을 못 읽으면 지금 동작(공지·일정·주보 누구나, 설교·갤러리 교인만). 설정 저장은 `revalidateVisibility()`로 목록·홈·sitemap·RSS 캐시를 즉시 지운다. 검색 로봇: `교인만`인 공지·일정·주보는 robots 차단·sitemap/RSS 제외·`noindex`, 설교·갤러리는 설정과 무관하게 차단.
 
 ### 2.4 인가 거부 → 401 vs 403
 
@@ -291,8 +292,11 @@ async function handleApiError(res: Response): Promise<never> {
 
 ### 5.2 `media:{id}` → URL 치환
 
-본문 속 이미지·PDF는 URL이 아니라 **`media:{id}` 리터럴**로 참조된다(`![alt](media:42)`, `[제목](media:42)`). 렌더 전에 실제 서빙 URL `GET /api/media/{id}`(공개)로 치환한다. 이 모델 덕에 본문이 교회별 베이스 URL과 무관하게 동일하다.
+본문 속 이미지·PDF는 URL이 아니라 **`media:{id}` 리터럴**로 참조된다(`![alt](media:42)`, `[제목](media:42)`). 렌더 전에 실제 서빙 URL로 치환한다 — 설교·공지·일정·앨범 상세 응답의 `mediaUrls`(`media:{id}`별 서명 주소, 요청자가 열 수 있는 모든 id)가 있으면 그 값을, 없으면(구 백엔드) `GET /api/media/{id}`. 맵을 넘기면 맵에 없는 이미지는 그리지 않는다. 주보 PDF는 카드·상세의 `url`(서명 주소)을 쓴다. 이 모델 덕에 본문이 교회별 베이스 URL과 무관하게 동일하다.
 
+- **서명 주소는 브라우저 조회 결과에만 쓴다.** 서명 주소(`?exp=&sig=`)는 1시간 뒤 만료되고, 만료된 서명이 붙은 요청은 누구나 볼 수 있는 미디어라도 404다. 서버 렌더 페이지(메뉴가 누구나일 때의 공지·일정·주보)는 `revalidate 60`·stale-while-revalidate로 캐시되므로, 조용한 시간이 지나면 만료된 링크가 담긴 HTML이 나갈 수 있다. 그래서 서버 렌더 경로는 응답에 `url`·`mediaUrls`가 있어도 **늘 무서명** `GET /api/media/{id}`로 그린다(누구나 글이라 무서명이 열린다). 교인만 메뉴의 브라우저 조회(TanStack Query, 요청마다 새로 받음)만 응답의 서명 주소를 쓴다 — 표시 컴포넌트(`BulletinListView`·`NoticeDetailView`·`EventDetailView`/`EventDetailBody`)는 `signed` prop이 `true`일 때만 서명 주소를 쓰고 기본값은 무서명이다(서버 페이지가 실수로 서명 주소를 굽지 않게). 화면을 오래 띄워 둔 경우를 위해 콘텐츠 쿼리는 50분이 지났으면 탭 복귀 때 다시 받는다(`refetchContentOnFocus`).
+
+- `GET /api/media/{id}`(무서명)는 그 파일을 쓰는 글이 지금 누구나 볼 수 있을 때만 열린다(부서 참조는 항상). 공개 범위가 바뀔 수 있는 미디어는 `next/image` 최적화를 쓰지 않는다(`unoptimized` — 최적화 캐시 31일, 지울 방법 없음).
 - `GET /api/media/{id}`는 파일 바이트를 반환하며 응답에 `X-Content-Type-Options: nosniff`가 붙는다(MIME 스니핑 기반 저장형 XSS 차단). 관리용 메타 조회(`/api/admin/media/{id}`)와 다르다(6장).
 - **치환 순서**: 마크다운 파싱 후 sanitize까지 끝낸 다음 `media:{id}`를 URL로 바꾸거나, sanitize 단계에서 허용 스킴/도메인을 통제하라. 어느 쪽이든 **새니타이즈는 반드시 거친다.**
 
@@ -415,14 +419,15 @@ async function saveWithRetry(id: number, edit: (cur: Detail) => UpdateReq) {
 | **role** | `priority,desc`(비페이징 평배열) | 없음 | id·name·priority·isSystem·description·permissions | — | `ROLE_MANAGE` | — |
 | **permission** | `name,asc`(비페이징 평배열) | 없음 | id·name(영문)·description(한글) | — | `ROLE_MANAGE` | — |
 | **tag** | `name,asc`(비페이징 평배열) | 없음 | id·name(한글) | — | **목록 공개**, 쓰기 `TAG_MANAGE` | — |
-| **sermon** | `preachedAt,desc` | `preacher`·`series`(완전일치)·`from`/`to`·`q`·`tagId` | id·title·preacher·series·scripture·preachedAt·viewCount·tags·author | O(create/update/patch) | 조회 `SERMON_VIEW`(회원전용), 쓰기 `SERMON_WRITE` | `content` (+videoUrl·audioUrl 외부링크) |
-| **notice** | `isPinned,desc` + `createdAt,desc` | `q`(**제목만**)·`tagId` | id·title·isPinned·viewCount·createdAt·tags·author | O | 조회 공개, 쓰기 `NOTICE_WRITE` | `content` |
-| **event** | `startAt,asc` | `year`+`month` **또는** `startDate`+`endDate`(쌍 필수)·`tagId` | id·title·location·startAt·endAt·allDay·tags (**author·viewCount 없음**) | O(태그만 수정 시 version 불변) | 조회 공개, 쓰기 `EVENT_WRITE` | `description` |
+| **sermon** | `preachedAt,desc` | `preacher`·`series`(완전일치)·`from`/`to`·`q`·`tagId` | id·title·preacher·series·scripture·preachedAt·viewCount·tags·author | O(create/update/patch) | 조회는 공개 범위 설정(교인만이면 `SERMON_VIEW`) + 한 편의 `membersOnly`, 쓰기 `SERMON_WRITE` | `content` (+videoUrl·audioUrl 외부링크) |
+| **notice** | `isPinned,desc` + `createdAt,desc` | `q`(**제목만**)·`tagId` | id·title·isPinned·viewCount·createdAt·tags·author | O | 조회는 공개 범위 설정(교인만이면 `NOTICE_VIEW`), 쓰기 `NOTICE_WRITE` | `content` |
+| **event** | `startAt,asc` | `year`+`month` **또는** `startDate`+`endDate`(쌍 필수)·`tagId` | id·title·location·startAt·endAt·allDay·tags (**author·viewCount 없음**) | O(태그만 수정 시 version 불변) | 조회는 공개 범위 설정(교인만이면 `EVENT_VIEW`), 쓰기 `EVENT_WRITE` | `description` |
 | **department** | `sortOrder,id`(**비페이징 평배열**) | 없음 | id·name·leader·parentId·sortOrder (**author·tags·viewCount 없음**) | **X**(태그 없음) | 조회 공개, 쓰기 `DEPT_WRITE` | `description` |
 | **main** | 고정(설교3·공지3·일정5) | 없음 | 세 도메인 카드 메타(본문 제외) | — | **공개**(Redis 캐시, 콘텐츠 CUD 시 무효화) | — |
-| **media** | `createdAt,desc`(admin) | `type`·`from`/`to` | 메타 | — | 관리 `MEDIA_MANAGE`, **서빙 `/api/media/{id}` 공개** | — |
-| **gallery** | `createdAt,desc` | `tagId` | id·title·thumbnailMediaId(첫 사진, 없으면 null)·photoCount·createdAt·tags·author | O(앨범, 태그만 수정 시 version 불변) | **`GALLERY_VIEW` 회원전용**, 쓰기 `GALLERY_WRITE` | 앨범 `description` |
-| **bulletin** | `serviceDate,desc` | 없음(OpenAPI 참조) | id·title·serviceDate·mediaId·author | — | **조회 공개**, 쓰기 `BULLETIN_WRITE` | 없음(PDF FK만, `GET /api/media/{mediaId}`로 열람) |
+| **media** | `createdAt,desc`(admin) | `type`·`from`/`to` | 메타 | — | 관리 `MEDIA_MANAGE`, 서빙 `/api/media/{id}`는 참조 글이 누구나일 때만 무서명 공개(그 밖엔 응답의 서명 주소, 5.2) | — |
+| **gallery** | `createdAt,desc` | `tagId` | id·title·thumbnailMediaId(첫 사진, 없으면 null)·photoCount·createdAt·tags·author | O(앨범, 태그만 수정 시 version 불변) | 조회는 공개 범위 설정(교인만이면 `GALLERY_VIEW`) + 앨범의 `membersOnly`(부서 연결 앨범은 교인만 불가), 쓰기 `GALLERY_WRITE` | 앨범 `description` |
+| **bulletin** | `serviceDate,desc` | 없음(OpenAPI 참조) | id·title·serviceDate·mediaId·author | — | 조회는 공개 범위 설정(교인만이면 `BULLETIN_VIEW`), 쓰기 `BULLETIN_WRITE` | 없음(PDF FK만, 응답 `url` 서명 주소로 열람 — 없으면 `GET /api/media/{mediaId}`) |
+| **visibility** | — | 없음 | `{ notices, events, bulletins, sermons, gallery }` 각 `PUBLIC`·`MEMBERS` | — | **조회 공개**, 저장 `PUT /api/admin/visibility` `VISIBILITY_MANAGE`(5개 값 덮어쓰기) | — |
 
 도메인 특이 동작 메모:
 - **일정 달력**: 범위 파라미터는 **반드시 쌍**(한쪽만 보내면 400). 둘 다 보내면 year/month 우선. 겹침은 `end_at` 배타 경계, `end_at=null` 점 이벤트는 `start_at` 기준 포함.
