@@ -1,11 +1,13 @@
 // src/components/sermons/ActiveFilters.test.tsx
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 
+const { spRef } = vi.hoisted(() => ({ spRef: { current: null as URLSearchParams | null } }));
 vi.mock("next/navigation", () => ({
   usePathname: () => "/sermons",
-  useSearchParams: () => new URLSearchParams("q=grace&preacher=Kim&tagId=3"),
+  // 기본은 "q=grace&preacher=Kim&tagId=3" — 고르기 모드 테스트만 바꾼다
+  useSearchParams: () => spRef.current ?? new URLSearchParams("q=grace&preacher=Kim&tagId=3"),
 }));
 vi.mock("next/link", () => ({
   default: ({ href, children, ...rest }: { href: string; children: ReactNode }) => (
@@ -43,5 +45,17 @@ describe("ActiveFilterChips (렌더)", () => {
     expect(href).not.toContain("q=");
     expect(href).toContain("preacher=Kim");
     expect(href).toContain("tagId=3");
+  });
+});
+
+// #201 — 설교 고르기 모드(?pick=1)는 필터 칩을 지워도 유지돼야 한다(회귀 고정).
+describe("ActiveFilterChips 고르기 모드 유지", () => {
+  afterEach(() => {
+    spRef.current = null;
+  });
+  it("칩 제거 링크가 pick=1을 넘긴다", () => {
+    spRef.current = new URLSearchParams("q=grace&pick=1");
+    render(<ActiveFilterChips />);
+    expect(screen.getByRole("link", { name: /필터 제거/ }).getAttribute("href")).toBe("/sermons?pick=1");
   });
 });

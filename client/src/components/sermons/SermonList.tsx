@@ -11,6 +11,7 @@ import { EmptyState } from "@/components/common/EmptyState";
 import { CardGridSkeleton } from "@/components/common/CardGridSkeleton";
 import { MemberAccessNotice, accessNoticeReason } from "@/components/common/MemberGate";
 import { MembersOnlyBanner, MembersOnlyToggle } from "@/components/visibility/MembersOnlyToggle";
+import { usePickMode } from "@/components/visibility/pickMode";
 import type { SermonListParams } from "@/lib/api/sermons";
 import type { SermonCardResponse, VisibilityLevel } from "@/lib/api/types";
 import { SermonSearch } from "./SermonSearch";
@@ -40,7 +41,8 @@ function toDate(v: string | null): string | undefined {
 // 목록 클라이언트 — URL(?page·?tagId·?q·?preacher·?series·?from·?to)을 쿼리로,
 // 검색/필터/페이지네이션은 URL 갱신 → useSearchParams 재파싱으로 동작(AlbumList 패턴).
 // 화면: 필터 없는 첫 페이지면 최신 설교를 띠로 크게(SermonFeature), 나머지는 월별 줄 목록(SermonMonthList).
-// menuLevel: 메뉴 전체가 교인만이면 글 단위 버튼 위에 안내 한 줄(MembersOnlyBanner).
+// menuLevel: 메뉴 전체가 교인만이면 글 단위 버튼·배지를 숨기고 안내 한 줄(MembersOnlyBanner)만 —
+// 버튼은 쓰는 사람이 그 줄의 링크로 고르기 모드(?pick=1)에 들어올 때만 보인다(#201).
 export function SermonList({ menuLevel }: { menuLevel: VisibilityLevel }) {
   const searchParams = useSearchParams();
   const params: SermonListParams = {
@@ -57,6 +59,12 @@ export function SermonList({ menuLevel }: { menuLevel: VisibilityLevel }) {
   const showFeature = !page && Object.values(filters).every((v) => v === undefined);
   const [now] = useState(() => new Date()); // "이번 주" 판정 기준 — 렌더마다 바뀌지 않게 마운트 시 고정
 
+  const pickMode = usePickMode("sermons", menuLevel);
+  // 교인만 메뉴에서 글 단위 표시는 지금 아무것도 바꾸지 않는다 — 보이면 공개된 줄 안다(#201).
+  const renderToggle =
+    menuLevel === "PUBLIC" || pickMode ? (s: SermonCardResponse) => toggle(s, pickMode) : undefined;
+  const showBadge = menuLevel === "PUBLIC";
+
   const sermons = useSermons(params);
   const tags = useSermonTags();
   // 401/403 = 교인 전용(만료 세션·낡은 설정) → 오류 대신 게이트와 같은 안내
@@ -68,12 +76,12 @@ export function SermonList({ menuLevel }: { menuLevel: VisibilityLevel }) {
   return (
     <div className="mt-lg flex flex-col gap-base">
       {/* 모든 글 단위 버튼보다 위에 한 번 — 행마다 반복하지 않는다(6.6-18) */}
-      <MembersOnlyBanner menuLevel={menuLevel} writePermission="SERMON_WRITE" />
+      <MembersOnlyBanner menu="sermons" menuLevel={menuLevel} />
       {featured ? (
         <div className="mb-lg">
-          <SermonFeature sermon={featured} now={now} />
+          <SermonFeature sermon={featured} now={now} showBadge={showBadge} />
           {/* 띠 전체가 링크라 버튼은 띠 아래 형제 줄에(주보 띠의 어드민 액션 배치와 같음) */}
-          <div className="mt-xs flex justify-end">{toggle(featured)}</div>
+          {renderToggle ? <div className="mt-xs flex justify-end">{renderToggle(featured)}</div> : null}
         </div>
       ) : null}
       <SermonSearch />
@@ -102,7 +110,7 @@ export function SermonList({ menuLevel }: { menuLevel: VisibilityLevel }) {
               aria-busy={sermons.isPlaceholderData}
               className={cn("mt-xl", sermons.isPlaceholderData && "opacity-60 transition-opacity")}
             >
-              <SermonMonthList sermons={rest} renderActions={toggle} />
+              <SermonMonthList sermons={rest} renderActions={renderToggle} showBadge={showBadge} />
             </div>
           ) : null}
           {sermons.data.page.totalPages > 1 ? (
@@ -117,8 +125,15 @@ export function SermonList({ menuLevel }: { menuLevel: VisibilityLevel }) {
 }
 
 // 목록에서 바로 저장하려면 카드의 version이 필요하다 — 칸이 없는 응답(구 백엔드)은 버튼을 그리지 않는다.
-function toggle(s: SermonCardResponse) {
+function toggle(s: SermonCardResponse, pickMode: boolean) {
   return s.version != null ? (
-    <MembersOnlyToggle kind="sermon" id={s.id} title={s.title} version={s.version} membersOnly={!!s.membersOnly} />
+    <MembersOnlyToggle
+      kind="sermon"
+      id={s.id}
+      title={s.title}
+      version={s.version}
+      membersOnly={!!s.membersOnly}
+      pickMode={pickMode}
+    />
   ) : null;
 }

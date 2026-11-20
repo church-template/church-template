@@ -523,8 +523,17 @@ portal로 뜨는 동작 컴포넌트(Modal·Sheet·Popover·Select·Dropdown·To
   (접근 이름 예: "교인만, 달란트 시장 앨범을 누구나 보도록 바꾸기" — 보이는 글자로 시작해야 음성 제어로 부를 수 있다, WCAG 2.5.3).
   쓰기 권한(`SERMON_WRITE`·`GALLERY_WRITE`) 보유자에게만. 항상 카드·행 링크 밖 형제(설교 행 = 링크 오른쪽, 설교 띠·앨범 카드 = 아래 줄).
   부서에 연결된 누구나 앨범은 비활성 + 아래 `{typography.caption}` `{colors.body}` 안내(부서 연결을 먼저 끊으라는 문장).
+  **메뉴가 교인만이면 기본으로 숨긴다**(#201 — 교인만 메뉴에서 `누구나 공개`를 보고 공개된 줄 알고 누른 일이 있었다). 쓰기 권한자가 `members-only-banner`의 링크로
+  **고르기 모드**(목록 주소 `?pick=1`)에 들어올 때만 나온다. 이때 글자는 메뉴를 누구나로 열었을 때의 결과다 — 표시 없는 글 `열면 공개`(`Globe`) / 표시한 글 `열어도 교인만`(`Lock`).
+  숨긴 동작도 그 기준("열면 공개, 은혜로 사는 삶 설교는 메뉴를 열어도 교인만 보도록 바꾸기"), Toast도 같다("열어도 교인만 보게 바꿨습니다." / "열면 누구나 볼 수 있게 바꿨습니다.").
+  누름·409·부서 연결 비활성은 그대로. 권한이 없거나 메뉴가 누구나면 `pick=1`은 아무 일도 하지 않는다. 목록 안 페이지·태그·검색 링크는 `pick`을 그대로 넘긴다.
 - **`members-only-badge`**: 교인만 글 표시. 기존 `Badge` default + lucide `Lock` 16, 새 색 없음. 카드·행·상세 제목 옆. 쓰기 권한이 없는 교인에게는 이 배지만 보인다.
+  **메뉴가 누구나일 때만** 그린다 — 메뉴 전체가 교인만이면 목록·상세 어디에도 없다(고르기 모드 포함 — 버튼 글자가 대신 말한다). 누구에게나 같다.
 - **`members-only-banner`**: 메뉴 전체가 교인만일 때 목록 위 한 줄(목록당 1회, 행마다 아님). `{typography.body-sm}` `{colors.body}` + lucide `Lock` 20, 배경·테두리 없음. 쓰기 권한자에게만.
+  문장 "지금은 설교 전체가 교인 전용입니다."(갤러리: "갤러리") 뒤에 링크 "열기 전에 교인 전용 글 고르기"(지금 목록 주소에 `pick=1`을 더한다, 다른 조건 유지).
+  고르기 모드에선 문장 "지금은 설교 전체가 교인 전용입니다. 아래 표시는 설교를 누구나로 열었을 때 적용됩니다." + 링크 "고르기 끝내기"(`pick`만 뺀다).
+  링크는 `visibility-status-link` 결(`{typography.body-sm}` `{colors.body}` hover primary + `ChevronRight` 20, 48px 누름 영역).
+  등록·수정 폼의 교인만 체크박스 아래에도 메뉴가 교인만이면 `{typography.caption}` `{colors.body}` 한 줄("지금은 설교 전체가 교인 전용이라, 설교를 누구나로 열었을 때만 적용됩니다."). 설정을 못 읽으면 줄 없음.
 - **`visibility-status-link`**: 공지·일정·주보·설교·갤러리 목록 제목 줄의 공개 상태 표시(#198). `교인만 공개 · 변경` / `누구나 공개 · 변경` `{typography.body-sm}` `{colors.body}`(hover primary) + 앞 lucide `Lock`/`Globe` 20 + 뒤 `ChevronRight` 20. 48px 누름 영역 링크 → `/mypage/manage/visibility`.
   `VISIBILITY_MANAGE` 보유자에게만. 설정을 못 읽었으면 그리지 않는다(틀린 상태를 보이지 않게). 제목(h1) 바로 옆, 등록 버튼 앞.
 
@@ -634,7 +643,8 @@ portal로 뜨는 동작 컴포넌트(Modal·Sheet·Popover·Select·Dropdown·To
 - **`visibility-settings`**: 공개 범위 설정(`/mypage/manage/visibility`, #198). `edit-page-shell` 없이 단일 칸(`--container-narrow`). 제목 아래 리드 `{typography.body-md}` `{colors.body}`.
   행 5개(공지·일정·주보·설교·갤러리) = `form-section` 결 2px `{colors.ink}` 상단 룰 아래 1px 헤어라인 줄. 행 = `fieldset` — 메뉴명(`legend`) `{typography.title-md}` + 라디오 2개 `누구나`·`교인만` `{typography.body-md}`.
   라디오는 **native `input type="radio"`**(새 컴포넌트 라이브러리 금지), 24px `{rounded.full}`, 테두리 2px `{colors.muted-soft}` → 선택 시 `{colors.primary}` 굵은 테두리(가운데 canvas 점). 라벨 행 전체가 누름 영역(행 높이 ≥48px).
-  설교·갤러리 행 아래 `{typography.caption}` `{colors.body}` 안내("글마다 교인만으로 따로 정할 수 있어요"). 아래 `취소`(button-secondary, 저장된 값으로 되돌림) `저장`(button-primary — 화면 유일 파란 버튼).
+  설교·갤러리 행 아래 `{typography.caption}` `{colors.body}` 안내("글마다 교인만으로 따로 정할 수 있어요"). 그 행의 **저장된 값**이 교인만이면 안내 아래 링크
+  "열기 전에 교인 전용 글 고르기"(`/sermons?pick=1`·`/gallery?pick=1`, `visibility-status-link` 결·48px) — 고르기 모드로 간다. 저장된 값이 누구나면 안내만. 아래 `취소`(button-secondary, 저장된 값으로 되돌림) `저장`(button-primary — 화면 유일 파란 버튼).
   `교인만`으로 바꾸는 저장은 바로, `누구나`로 여는 메뉴가 있으면 `visibility-confirm-dialog`를 거친다.
 - **`visibility-confirm-dialog`**: 누구나로 여는 저장의 확인창. 기존 `Dialog` + 제목 "누구나 볼 수 있게 바꿀까요?" + 여는 메뉴마다 한 문장 `{typography.body-md}` `{colors.body}`.
   설교·갤러리는 그 메뉴의 쓰기 권한이 있으면 숫자를 넣는다("앨범 32개 중 9개는 교인만 보고, 23개는 …" — 목록 `totalElements`), 없거나 못 읽으면 숫자 없는 문장. 숫자를 받는 동안 `바꾸기` 비활성. `취소` secondary · `바꾸기` button-primary.

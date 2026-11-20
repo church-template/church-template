@@ -10,12 +10,14 @@ import { Skeleton } from "@/components/common/Skeleton";
 import { MarkdownContent } from "@/components/common/MarkdownContent";
 import { MemberAccessNotice, accessNoticeReason } from "@/components/common/MemberGate";
 import { MembersOnlyBadge } from "@/components/visibility/MembersOnlyBadge";
+import type { VisibilityLevel } from "@/lib/api/types";
 import { useAlbum } from "./queries";
 import { PhotoGrid } from "./PhotoGrid";
 import { AlbumDetailActions } from "./GalleryAdminActions";
 
 // 상세 클라이언트 — 제목·메타·태그·description(마크다운)·사진 그리드.
-export function AlbumDetail({ id }: { id: number }) {
+// menuLevel: 메뉴 전체가 교인만이면 글 단위 교인만 배지를 그리지 않는다(#201 — 그 표시는 지금 아무것도 바꾸지 않는다).
+export function AlbumDetail({ id, menuLevel }: { id: number; menuLevel?: VisibilityLevel }) {
   const { data: album, isPending, isError, error, refetch } = useAlbum(id);
   // 누구나 메뉴의 교인만 앨범 주소를 방문자가 열면 401 → 로그인 안내(스토리보드 E)
   const accessReason = accessNoticeReason(error);
@@ -48,7 +50,7 @@ export function AlbumDetail({ id }: { id: number }) {
         <>
           <div className="mt-base flex flex-wrap items-center gap-sm">
             <h1 className={cn(typo.displaySm, "text-ink")}>{album.title}</h1>
-            {album.membersOnly ? <MembersOnlyBadge /> : null}
+            {menuLevel !== "MEMBERS" && album.membersOnly ? <MembersOnlyBadge /> : null}
           </div>
           <p className={cn(typo.datetime, "mt-xs text-muted")}>
             {formatDate(album.createdAt)} · 사진 {album.photos.length}장

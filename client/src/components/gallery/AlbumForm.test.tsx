@@ -65,3 +65,31 @@ describe("AlbumForm 교인만 보기", () => {
     await waitFor(() => expect(createAlbumMock).toHaveBeenCalledWith(expect.objectContaining({ membersOnly: false })));
   });
 });
+
+// #201 — 메뉴가 교인만이면 체크박스가 지금 당장은 아무것도 바꾸지 않는다는 것을 한 줄로 알린다.
+describe("AlbumForm 교인만 메뉴 안내", () => {
+  const NOTE = "지금은 갤러리 전체가 교인 전용이라, 갤러리를 누구나로 열었을 때만 적용됩니다.";
+
+  it("메뉴가 교인만이면 체크박스 아래 안내 한 줄(체크박스 설명으로 연결)", () => {
+    renderForm(<AlbumForm mode="edit" initial={INITIAL} menuLevel="MEMBERS" />);
+    const note = screen.getByText(NOTE);
+    const box = screen.getByLabelText(VISIBILITY_COPY.albumCheckbox);
+    expect(box.getAttribute("aria-describedby")).toBe(note.id);
+  });
+
+  it("부서 연결 안내와 함께면 둘 다 설명으로 연결", () => {
+    renderForm(<AlbumForm mode="edit" initial={{ ...INITIAL, departmentLinked: true }} menuLevel="MEMBERS" />);
+    const ids = screen.getByLabelText(VISIBILITY_COPY.albumCheckbox).getAttribute("aria-describedby")?.split(" ");
+    expect(ids).toEqual([screen.getByText(VISIBILITY_COPY.deptLinked).id, screen.getByText(NOTE).id]);
+  });
+
+  it("대조: 메뉴가 누구나면 안내 없음", () => {
+    renderForm(<AlbumForm mode="create" menuLevel="PUBLIC" />);
+    expect(screen.queryByText(NOTE)).toBeNull();
+  });
+
+  it("대조: 설정을 못 읽으면(menuLevel 없음) 지금처럼 안내 없음", () => {
+    renderForm(<AlbumForm mode="create" />);
+    expect(screen.queryByText(NOTE)).toBeNull();
+  });
+});

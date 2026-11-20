@@ -21,7 +21,8 @@ function thumbnailSrc(album: GalleryAlbumCardResponse): string | null {
   return album.thumbnailMediaId != null ? mediaSrc(album.thumbnailMediaId) : null;
 }
 
-export function AlbumCard({ album }: { album: GalleryAlbumCardResponse }) {
+// showBadge: 메뉴 전체가 교인만이면 글 단위 교인만 배지를 그리지 않는다(#201).
+export function AlbumCard({ album, showBadge = true }: { album: GalleryAlbumCardResponse; showBadge?: boolean }) {
   const thumb = thumbnailSrc(album);
   return (
     <Link href={`/gallery/albums/${album.id}`} className={cn("block", focusRing)}>
@@ -48,7 +49,7 @@ export function AlbumCard({ album }: { album: GalleryAlbumCardResponse }) {
         <div className="p-xl">
           <div className="flex flex-wrap items-center gap-xs">
             <h3 className={cn(typo.titleMd, "text-ink")}>{album.title}</h3>
-            {album.membersOnly ? <MembersOnlyBadge /> : null}
+            {showBadge && album.membersOnly ? <MembersOnlyBadge /> : null}
           </div>
           <p className={cn(typo.datetime, "mt-xxs text-muted")}>
             {formatDate(album.createdAt)} · 사진 {album.photoCount}장

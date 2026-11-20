@@ -19,7 +19,7 @@ export default async function AlbumDetailPage({ params }: { params: Promise<{ id
   // 누구나 메뉴의 교인만 앨범은 조회가 401/403을 받아 AlbumDetail이 로그인·승인 안내를 그린다.
   await connection();
   const levels = resolveVisibility(await getVisibility());
-  const detail = <AlbumDetail id={numId} />;
+  const detail = <AlbumDetail id={numId} menuLevel={levels.gallery} />;
 
   return (
     <Container as="section" className="py-section">

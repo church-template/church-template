@@ -110,4 +110,16 @@ describe("AlbumDetail 교인만 배지", () => {
     render(<AlbumDetail id={5} />);
     expect(screen.queryByText("교인만")).toBeNull();
   });
+  // #201 — 메뉴 전체가 교인만이면 글 단위 표시는 의미가 없어 누구에게도 보이지 않는다.
+  it("메뉴가 교인만이면 표시한 앨범에도 배지 없음", () => {
+    useAlbumMock.mockReturnValue(detailState({ data: { ...album, membersOnly: true } }));
+    render(<AlbumDetail id={5} menuLevel="MEMBERS" />);
+    expect(screen.getByRole("heading", { level: 1 })).toBeDefined();
+    expect(screen.queryByText("교인만")).toBeNull();
+  });
+  it("회귀: 메뉴가 누구나면 표시한 앨범에 배지", () => {
+    useAlbumMock.mockReturnValue(detailState({ data: { ...album, membersOnly: true } }));
+    render(<AlbumDetail id={5} menuLevel="PUBLIC" />);
+    expect(screen.getByText("교인만")).toBeDefined();
+  });
 });

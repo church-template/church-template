@@ -9,12 +9,14 @@ vi.mock("next/link", () => ({
   ),
 }));
 
-const { useSermonsMock, useSermonTagsMock, searchParamsRef } = vi.hoisted(() => ({
+const { useSermonsMock, useSermonTagsMock, searchParamsRef, perms } = vi.hoisted(() => ({
+  perms: { current: ["SERMON_WRITE"] as string[] },
   useSermonsMock: vi.fn(),
   useSermonTagsMock: vi.fn(),
   searchParamsRef: { current: new URLSearchParams("") },
 }));
 vi.mock("./queries", () => ({ useSermons: useSermonsMock, useSermonTags: useSermonTagsMock }));
+vi.mock("@/lib/auth/useMe", () => ({ useHasPermission: (p: string) => perms.current.includes(p) }));
 vi.mock("next/navigation", () => ({ useSearchParams: () => searchParamsRef.current, usePathname: () => "/sermons" }));
 // 자식 컴포넌트 격리 — URL 조작 동작은 각자 테스트(SermonSearch.test 등)에서 검증.
 vi.mock("./SermonSearch", () => ({ SermonSearch: () => null }));
@@ -23,7 +25,9 @@ vi.mock("@/components/common/TagFilter", () => ({ TagFilter: () => null }));
 vi.mock("@/components/common/Pagination", () => ({ Pagination: () => "PAGINATION" }));
 // 글 단위 버튼·배너는 권한·저장 동작을 MembersOnlyToggle.test에서 검증 — 여기선 자리(링크 밖·1회)만 본다.
 vi.mock("@/components/visibility/MembersOnlyToggle", () => ({
-  MembersOnlyToggle: ({ id }: { id: number }) => <button type="button">{`TOGGLE-${id}`}</button>,
+  MembersOnlyToggle: ({ id, pickMode }: { id: number; pickMode?: boolean }) => (
+    <button type="button" data-pick={String(!!pickMode)}>{`TOGGLE-${id}`}</button>
+  ),
   MembersOnlyBanner: ({ menuLevel }: { menuLevel: string }) =>
     menuLevel === "MEMBERS" ? <p>지금은 전체가 교인 전용입니다</p> : null,
 }));
@@ -45,6 +49,7 @@ beforeEach(() => {
   useSermonsMock.mockReset();
   useSermonTagsMock.mockReturnValue({ data: [], isPending: false, isError: false });
   searchParamsRef.current = new URLSearchParams("");
+  perms.current = ["SERMON_WRITE"];
 });
 
 describe("SermonList", () => {
@@ -194,5 +199,80 @@ describe("SermonList 교인만 표시", () => {
     render(<SermonList menuLevel="PUBLIC" />);
     expect(screen.getByRole("button", { name: "TOGGLE-1" })).toBeDefined();
     expect(screen.queryByRole("button", { name: "TOGGLE-4" })).toBeNull();
+  });
+});
+
+// 교인만 메뉴(#201) — 기본은 글 단위 버튼·배지를 숨기고, 쓰기 권한자의 고르기 모드(?pick=1)에서만 버튼을 보인다.
+describe("SermonList 교인만 메뉴의 고르기 모드", () => {
+  const a = { ...card, id: 1, title: "첫 설교", preachedAt: "2026-07-19", membersOnly: false, version: 1 };
+  const b = { ...card, id: 2, title: "교인 설교", preachedAt: "2026-07-12", membersOnly: true, version: 1 };
+  const flaggedFirst = { ...b, id: 5, title: "표시한 최신", preachedAt: "2026-07-26" };
+  const toggles = () => screen.queryAllByRole("button").filter((el) => el.textContent?.startsWith("TOGGLE-"));
+
+  it("교인만 메뉴 기본: 쓰기 권한자에게도 버튼·배지가 없다(띠·줄 목록 모두)", () => {
+    useSermonsMock.mockReturnValue(state({ data: { content: [flaggedFirst, a, b], page } }));
+    const { container } = render(<SermonList menuLevel="MEMBERS" />);
+    expect(screen.getByText("말씀 보기")).toBeDefined(); // 띠가 그려진 상태에서
+    expect(toggles()).toHaveLength(0);
+    expect(container.textContent).not.toContain("교인만");
+  });
+
+  it("교인만 메뉴 기본: 글을 쓰지 않는 교인에게도 배지가 없다", () => {
+    perms.current = [];
+    searchParamsRef.current = new URLSearchParams("q=x");
+    useSermonsMock.mockReturnValue(state({ data: { content: [a, b], page } }));
+    const { container } = render(<SermonList menuLevel="MEMBERS" />);
+    expect(container.textContent).not.toContain("교인만");
+  });
+
+  it("교인만 메뉴 + pick=1 + 쓰기 권한: 띠·행마다 고르기 버튼(링크 밖), 배지는 여전히 없다", () => {
+    searchParamsRef.current = new URLSearchParams("pick=1");
+    useSermonsMock.mockReturnValue(state({ data: { content: [flaggedFirst, a, b], page } }));
+    const { container } = render(<SermonList menuLevel="MEMBERS" />);
+    const btns = toggles();
+    expect(btns.map((el) => el.textContent)).toEqual(["TOGGLE-5", "TOGGLE-1", "TOGGLE-2"]);
+    btns.forEach((el) => {
+      expect(el.getAttribute("data-pick")).toBe("true");
+      expect(el.closest("a")).toBeNull();
+    });
+    expect(container.textContent).not.toContain("교인만");
+  });
+
+  it("pick은 목록 조회 조건이 아니다(띠 판정·쿼리에 섞이지 않는다)", () => {
+    searchParamsRef.current = new URLSearchParams("pick=1");
+    useSermonsMock.mockReturnValue(state({ data: { content: [a], page } }));
+    render(<SermonList menuLevel="MEMBERS" />);
+    expect(useSermonsMock).toHaveBeenCalledWith(expect.not.objectContaining({ pick: expect.anything() }));
+    expect(screen.getByText("말씀 보기")).toBeDefined();
+  });
+
+  it("대조: pick=1이라도 쓰기 권한이 없으면 버튼이 없다", () => {
+    perms.current = [];
+    searchParamsRef.current = new URLSearchParams("q=x&pick=1");
+    useSermonsMock.mockReturnValue(state({ data: { content: [a, b], page } }));
+    render(<SermonList menuLevel="MEMBERS" />);
+    expect(toggles()).toHaveLength(0);
+  });
+
+  it("회귀: 누구나 메뉴는 지금 그대로 — 버튼은 지금 상태 글자(pickMode 아님), 교인만 행에 배지", () => {
+    searchParamsRef.current = new URLSearchParams("q=x");
+    useSermonsMock.mockReturnValue(state({ data: { content: [a, b], page } }));
+    render(<SermonList menuLevel="PUBLIC" />);
+    expect(toggles().map((el) => el.getAttribute("data-pick"))).toEqual(["false", "false"]);
+    expect((screen.getByText("교인 설교").closest("li") as HTMLElement).textContent).toContain("교인만");
+  });
+
+  it("회귀: 누구나 메뉴에서 pick=1은 아무 일도 하지 않는다", () => {
+    searchParamsRef.current = new URLSearchParams("q=x&pick=1");
+    useSermonsMock.mockReturnValue(state({ data: { content: [a, b], page } }));
+    render(<SermonList menuLevel="PUBLIC" />);
+    expect(toggles().map((el) => el.getAttribute("data-pick"))).toEqual(["false", "false"]);
+    expect((screen.getByText("교인 설교").closest("li") as HTMLElement).textContent).toContain("교인만");
+  });
+
+  it("회귀: 누구나 메뉴의 최신 설교 띠에도 교인만 배지", () => {
+    useSermonsMock.mockReturnValue(state({ data: { content: [flaggedFirst, a], page } }));
+    render(<SermonList menuLevel="PUBLIC" />);
+    expect((screen.getByText("말씀 보기").closest("a") as HTMLElement).textContent).toContain("교인만");
   });
 });

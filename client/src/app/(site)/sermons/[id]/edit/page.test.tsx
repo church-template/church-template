@@ -23,8 +23,21 @@ vi.mock("@/components/admin/EditGate", () => ({
   EditAccessDenied: () => <div data-testid="access-denied" />,
 }));
 vi.mock("@/components/sermons/SermonEditLoader", () => ({
-  SermonEditLoader: ({ id }: { id: number }) => <div data-testid="edit-loader" data-id={id} />,
+  SermonEditLoader: ({ id, menuLevel }: { id: number; menuLevel?: string }) => (
+    <div data-testid="edit-loader" data-id={id} data-menu-level={menuLevel ?? "none"} />
+  ),
 }));
+const { getVisibilityMock, connectionMock } = vi.hoisted(() => ({
+  getVisibilityMock: vi.fn(),
+  connectionMock: vi.fn(async () => {}),
+}));
+vi.mock("next/server", () => ({ connection: connectionMock }));
+vi.mock("@/lib/api/visibility", async (orig) => ({
+  ...(await orig<typeof import("@/lib/api/visibility")>()),
+  getVisibility: getVisibilityMock,
+}));
+const levels = (sermons: "PUBLIC" | "MEMBERS", gallery: "PUBLIC" | "MEMBERS") =>
+  ({ notices: "PUBLIC", events: "PUBLIC", bulletins: "PUBLIC", sermons, gallery }) as const;
 
 import SermonEditPage from "./page";
 
@@ -51,5 +64,18 @@ describe("SermonEditPage (셸)", () => {
     await expect(
       SermonEditPage({ params: Promise.resolve({ id: "-3" }) }),
     ).rejects.toThrow("NEXT_NOT_FOUND");
+  });
+});
+
+// #201 — 폼의 교인만 메뉴 안내는 실제 설정 값으로만. 못 읽으면 넘기지 않는다(안내 없음 = 지금 동작).
+describe("SermonEditPage 메뉴 수준 전달", () => {
+  it.each([
+    ["MEMBERS", levels("MEMBERS", "PUBLIC")],
+    ["PUBLIC", levels("PUBLIC", "MEMBERS")],
+    ["none", null],
+  ] as const)("로더에 menuLevel=%s", async (expected, v) => {
+    getVisibilityMock.mockResolvedValue(v);
+    render(await SermonEditPage({ params: Promise.resolve({ id: "7" }) }));
+    expect(screen.getByTestId("edit-loader").getAttribute("data-menu-level")).toBe(expected);
   });
 });

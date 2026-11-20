@@ -1,11 +1,13 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 
 // next/navigation·next/link 모킹: 현재 경로/쿼리 고정, Link는 a로 단순화.
+const { spRef } = vi.hoisted(() => ({ spRef: { current: null as URLSearchParams | null } }));
 vi.mock("next/navigation", () => ({
   usePathname: () => "/sermons",
-  useSearchParams: () => new URLSearchParams("tagId=3"),
+  // 기본은 "tagId=3" — 고르기 모드 테스트만 바꾼다
+  useSearchParams: () => spRef.current ?? new URLSearchParams("tagId=3"),
 }));
 vi.mock("next/link", () => ({
   // scroll은 유효한 DOM 속성이 아니므로 data-scroll로 노출해 전달 여부를 검증한다.
@@ -78,5 +80,18 @@ describe("PaginationControls scroll prop", () => {
     render(<PaginationControls page={page} />);
     const link = screen.getByRole("link", { name: "3" });
     expect(link.getAttribute("data-scroll")).toBe("true");
+  });
+});
+
+// #201 — 설교·갤러리 고르기 모드(?pick=1)는 페이지를 넘겨도 유지돼야 한다(회귀 고정).
+describe("PaginationControls 고르기 모드 유지", () => {
+  afterEach(() => {
+    spRef.current = null;
+  });
+  it("pick=1을 그대로 넘기고 page만 바꾼다", () => {
+    spRef.current = new URLSearchParams("tagId=3&pick=1");
+    render(<PaginationControls page={{ size: 10, number: 1, totalElements: 95, totalPages: 10 }} />);
+    expect(screen.getByRole("link", { name: "3" }).getAttribute("href")).toBe("/sermons?tagId=3&pick=1&page=2");
+    expect(screen.getByTestId("pagination-next").getAttribute("href")).toBe("/sermons?tagId=3&pick=1&page=2");
   });
 });

@@ -8,6 +8,7 @@ import { Pagination } from "@/components/common/Pagination";
 import { EmptyState } from "@/components/common/EmptyState";
 import { MemberAccessNotice, accessNoticeReason } from "@/components/common/MemberGate";
 import { MembersOnlyBanner, MembersOnlyToggle } from "@/components/visibility/MembersOnlyToggle";
+import { usePickMode } from "@/components/visibility/pickMode";
 import { GALLERY_PAGE_SIZE } from "@/lib/api/gallery";
 import type { VisibilityLevel } from "@/lib/api/types";
 import { useAlbums, useGalleryTags } from "./queries";
@@ -21,11 +22,17 @@ function toNum(v: string | null): number | undefined {
 }
 
 // 목록 클라이언트 — URL(?page·?tagId)을 쿼리로, TagFilter/Pagination은 Link 네비로 URL을 갱신.
-// menuLevel: 메뉴 전체가 교인만이면 글 단위 버튼 위에 안내 한 줄(MembersOnlyBanner).
+// menuLevel: 메뉴 전체가 교인만이면 글 단위 버튼·배지를 숨기고 안내 한 줄(MembersOnlyBanner)만 —
+// 버튼은 쓰는 사람이 그 줄의 링크로 고르기 모드(?pick=1)에 들어올 때만 보인다(#201).
 export function AlbumList({ menuLevel }: { menuLevel: VisibilityLevel }) {
   const searchParams = useSearchParams();
   const page = toNum(searchParams.get("page")) ?? 0;
   const tagId = toNum(searchParams.get("tagId"));
+
+  const pickMode = usePickMode("gallery", menuLevel);
+  // 교인만 메뉴에서 글 단위 표시는 지금 아무것도 바꾸지 않는다 — 보이면 공개된 줄 안다(#201).
+  const showToggle = menuLevel === "PUBLIC" || pickMode;
+  const showBadge = menuLevel === "PUBLIC";
 
   const albums = useAlbums({ page, tagId });
   const tags = useGalleryTags();
@@ -35,7 +42,7 @@ export function AlbumList({ menuLevel }: { menuLevel: VisibilityLevel }) {
   return (
     <div className="mt-lg flex flex-col gap-base">
       <TagFilter tags={tags.data ?? []} />
-      <MembersOnlyBanner menuLevel={menuLevel} writePermission="GALLERY_WRITE" />
+      <MembersOnlyBanner menu="gallery" menuLevel={menuLevel} />
 
       {albums.isPending ? (
         <div className="grid gap-base sm:grid-cols-2 lg:grid-cols-3">
@@ -66,8 +73,8 @@ export function AlbumList({ menuLevel }: { menuLevel: VisibilityLevel }) {
             {/* 카드 전체가 링크라 버튼은 카드 아래 형제로(중첩 인터랙티브 금지). version 없는 응답(구 백엔드)은 버튼 없음. */}
             {albums.data.content.map((a) => (
               <div key={a.id} className="flex flex-col gap-xs">
-                <AlbumCard album={a} />
-                {a.version != null ? (
+                <AlbumCard album={a} showBadge={showBadge} />
+                {showToggle && a.version != null ? (
                   <MembersOnlyToggle
                     kind="album"
                     id={a.id}
@@ -75,6 +82,7 @@ export function AlbumList({ menuLevel }: { menuLevel: VisibilityLevel }) {
                     version={a.version}
                     membersOnly={!!a.membersOnly}
                     departmentLinked={a.departmentLinked}
+                    pickMode={pickMode}
                   />
                 ) : null}
               </div>

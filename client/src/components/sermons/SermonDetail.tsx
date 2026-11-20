@@ -9,6 +9,7 @@ import { DetailSkeleton } from "@/components/common/DetailSkeleton";
 import { MarkdownContent } from "@/components/common/MarkdownContent";
 import { MemberAccessNotice, accessNoticeReason } from "@/components/common/MemberGate";
 import { MembersOnlyBadge } from "@/components/visibility/MembersOnlyBadge";
+import type { VisibilityLevel } from "@/lib/api/types";
 import { SermonVideo } from "./SermonVideo";
 import { SermonAudio } from "./SermonAudio";
 import { SermonDetailActions } from "./SermonAdminActions";
@@ -16,7 +17,8 @@ import { useSermon } from "./queries";
 
 // 상세 클라이언트 — 영상 우선 레이아웃(스펙 D6)·클릭 메타로 목록 필터(D9)는 RSC 시절 그대로.
 // 조회수+1 부수효과는 fetchSermon GET에 포함(쿼리 캐시 내 재방문은 미증가 — 갤러리와 동일 시맨틱).
-export function SermonDetail({ id }: { id: number }) {
+// menuLevel: 메뉴 전체가 교인만이면 글 단위 교인만 배지를 그리지 않는다(#201 — 그 표시는 지금 아무것도 바꾸지 않는다).
+export function SermonDetail({ id, menuLevel }: { id: number; menuLevel?: VisibilityLevel }) {
   const { data: sermon, isPending, isError, error, refetch } = useSermon(id);
   // 누구나 메뉴의 교인 전용 설교를 방문자가 열면 401 → 로그인 안내(스토리보드 E)
   const accessReason = accessNoticeReason(error);
@@ -49,7 +51,7 @@ export function SermonDetail({ id }: { id: number }) {
 
       <div className="mt-lg flex flex-wrap items-center gap-sm">
         <h1 className={cn(typo.titleLg, "text-ink")}>{sermon.title}</h1>
-        {sermon.membersOnly ? <MembersOnlyBadge /> : null}
+        {menuLevel !== "MEMBERS" && sermon.membersOnly ? <MembersOnlyBadge /> : null}
       </div>
       <SermonDetailActions id={sermon.id} />
 

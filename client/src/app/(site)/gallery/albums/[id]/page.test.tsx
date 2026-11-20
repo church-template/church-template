@@ -14,7 +14,9 @@ vi.mock("@/components/common/MemberGate", () => ({
   ),
 }));
 vi.mock("@/components/gallery/AlbumDetail", () => ({
-  AlbumDetail: ({ id }: { id: number }) => <div data-testid="detail" data-id={id} />,
+  AlbumDetail: ({ id, menuLevel }: { id: number; menuLevel?: string }) => (
+    <div data-testid="detail" data-id={id} data-menu-level={menuLevel} />
+  ),
 }));
 const { getVisibilityMock, connectionMock } = vi.hoisted(() => ({
   getVisibilityMock: vi.fn(),
@@ -56,5 +58,18 @@ describe("AlbumDetailPage (셸)", () => {
 
   it("비숫자 id면 설정을 읽기 전에 notFound", async () => {
     await expect(AlbumDetailPage({ params: Promise.resolve({ id: "abc" }) })).rejects.toThrow("NEXT_NOT_FOUND");
+  });
+});
+
+// #201 — 상세의 교인만 배지는 메뉴 수준을 보고 숨긴다. 못 읽으면 폴백(교인만)을 그대로 넘긴다(게이트와 같은 기준).
+describe("AlbumDetailPage 메뉴 수준 전달", () => {
+  it.each([
+    ["MEMBERS", levels("PUBLIC", "MEMBERS")],
+    ["PUBLIC", levels("MEMBERS", "PUBLIC")],
+    ["MEMBERS", null],
+  ] as const)("상세에 menuLevel=%s를 넘긴다", async (expected, v) => {
+    getVisibilityMock.mockResolvedValue(v);
+    render(await AlbumDetailPage({ params: Promise.resolve({ id: "5" }) }));
+    expect(screen.getByTestId("detail").getAttribute("data-menu-level")).toBe(expected);
   });
 });
