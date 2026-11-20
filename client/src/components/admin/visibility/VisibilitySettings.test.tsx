@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { ReactNode } from "react";
 import type { VisibilityResponse } from "@/lib/api/types";
 
 const { fetchVisibilityMock, updateVisibilityMock, revalidateVisibilityMock, notifySuccess } = vi.hoisted(() => ({
@@ -16,6 +17,11 @@ vi.mock("@/lib/notify", () => ({ notify: { success: notifySuccess, error: vi.fn(
 vi.mock("@/lib/auth/useMe", () => ({ useMe: () => ({ data: { permissions: ["VISIBILITY_MANAGE"] }, isLoading: false }) }));
 vi.mock("@/lib/api/gallery", () => ({ fetchAlbums: vi.fn() }));
 vi.mock("@/lib/api/sermons", () => ({ fetchSermons: vi.fn() }));
+vi.mock("next/link", () => ({
+  default: ({ href, children, ...rest }: { href: string; children: ReactNode }) => (
+    <a href={href} {...rest}>{children}</a>
+  ),
+}));
 
 import { VisibilitySettings } from "./VisibilitySettings";
 
@@ -153,5 +159,47 @@ describe("VisibilitySettings", () => {
     expect(text).not.toMatch(/권한|퍼블릭/);
     expect(text).toMatch(/누구나/);
     expect(text).toMatch(/교인만/);
+  });
+});
+
+// #201 — 저장된 값이 교인만인 설교·갤러리 행 아래에 고르기 모드로 가는 링크.
+describe("VisibilitySettings 고르기 링크", () => {
+  const PICK = "열기 전에 교인 전용 글 고르기";
+
+  it("저장된 값이 교인만이면 설교·갤러리 행 아래에 각 목록 ?pick=1 링크(48px)", async () => {
+    renderSettings();
+    await screen.findByRole("group", { name: "설교" });
+    const sermon = within(group("설교")).getByRole("link", { name: PICK });
+    const gallery = within(group("갤러리")).getByRole("link", { name: PICK });
+    expect(sermon.getAttribute("href")).toBe("/sermons?pick=1");
+    expect(gallery.getAttribute("href")).toBe("/gallery?pick=1");
+    expect(sermon.className).toContain("min-h-12");
+    expect(screen.getAllByRole("link", { name: PICK })).toHaveLength(2);
+  });
+
+  it("대조: 저장된 값이 누구나인 행에는 안내만 있고 링크가 없다", async () => {
+    fetchVisibilityMock.mockResolvedValue({ ...saved, sermons: "PUBLIC" });
+    renderSettings();
+    await screen.findByRole("group", { name: "설교" });
+    expect(within(group("설교")).queryByRole("link")).toBeNull();
+    expect(within(group("설교")).getByText("글마다 교인만으로 따로 정할 수 있어요")).toBeDefined();
+    expect(within(group("갤러리")).getByRole("link", { name: PICK })).toBeDefined();
+  });
+
+  it("링크는 저장된 값 기준 — 저장 전 라디오를 바꿔도 그대로", async () => {
+    fetchVisibilityMock.mockResolvedValue({ ...saved, sermons: "PUBLIC" });
+    renderSettings();
+    await screen.findByRole("group", { name: "설교" });
+    fireEvent.click(radio("설교", "교인만"));
+    fireEvent.click(radio("갤러리", "누구나"));
+    expect(within(group("설교")).queryByRole("link")).toBeNull();
+    expect(within(group("갤러리")).getByRole("link", { name: PICK })).toBeDefined();
+  });
+
+  it("공지·일정·주보 행에는 링크가 없다(교인만이어도)", async () => {
+    fetchVisibilityMock.mockResolvedValue({ ...saved, notices: "MEMBERS" });
+    renderSettings();
+    await screen.findByRole("group", { name: "공지" });
+    expect(within(group("공지")).queryByRole("link")).toBeNull();
   });
 });

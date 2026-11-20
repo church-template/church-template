@@ -1,5 +1,7 @@
 "use client";
 import { useState } from "react";
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { typo } from "@/constants/typography";
@@ -87,6 +89,16 @@ function VisibilityForm({ saved }: { saved: VisibilityResponse }) {
               ))}
             </div>
             {m.perItem ? <p className={cn(typo.caption, "text-body")}>{VISIBILITY_COPY.perItemHint}</p> : null}
+            {/* 저장된 값 기준(#201) — 아직 저장하지 않은 라디오로 바꾸면 목록이 그 상태가 아니다 */}
+            {m.perItem && saved[m.key] === "MEMBERS" ? (
+              <Link
+                href={`${m.href}?pick=1`}
+                className={cn(typo.bodySm, "inline-flex min-h-12 items-center gap-xs self-start text-body hover:text-primary")}
+              >
+                {VISIBILITY_COPY.pickStart}
+                <ChevronRight size={20} aria-hidden />
+              </Link>
+            ) : null}
           </fieldset>
         ))}
       </div>
