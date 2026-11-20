@@ -9,12 +9,15 @@ vi.mock("next/link", () => ({
   ),
 }));
 
-const { useAlbumsMock, useGalleryTagsMock } = vi.hoisted(() => ({
+const { useAlbumsMock, useGalleryTagsMock, searchParamsRef, perms } = vi.hoisted(() => ({
+  searchParamsRef: { current: new URLSearchParams("") },
+  perms: { current: ["GALLERY_WRITE"] as string[] },
   useAlbumsMock: vi.fn(),
   useGalleryTagsMock: vi.fn(),
 }));
 vi.mock("./queries", () => ({ useAlbums: useAlbumsMock, useGalleryTags: useGalleryTagsMock }));
-vi.mock("next/navigation", () => ({ useSearchParams: () => new URLSearchParams(""), usePathname: () => "/gallery" }));
+vi.mock("next/navigation", () => ({ useSearchParams: () => searchParamsRef.current, usePathname: () => "/gallery" }));
+vi.mock("@/lib/auth/useMe", () => ({ useHasPermission: (p: string) => perms.current.includes(p) }));
 // 자식 컴포넌트는 격리 — 링크 중복/Suspense 회피.
 vi.mock("@/components/common/TagFilter", () => ({ TagFilter: () => null }));
 vi.mock("@/components/common/Pagination", () => ({ Pagination: () => "PAGINATION" }));
@@ -22,8 +25,8 @@ vi.mock("@/components/common/Pagination", () => ({ Pagination: () => "PAGINATION
 vi.mock("./GalleryAdminActions", () => ({ AlbumListAction: () => null, AlbumDetailActions: () => null }));
 // 글 단위 버튼·배너의 권한·저장 동작은 MembersOnlyToggle.test에서 — 여기선 자리(카드 밖·1회)만 본다.
 vi.mock("@/components/visibility/MembersOnlyToggle", () => ({
-  MembersOnlyToggle: ({ id, departmentLinked }: { id: number; departmentLinked?: boolean }) => (
-    <button type="button" data-linked={String(!!departmentLinked)}>{`TOGGLE-${id}`}</button>
+  MembersOnlyToggle: ({ id, departmentLinked, pickMode }: { id: number; departmentLinked?: boolean; pickMode?: boolean }) => (
+    <button type="button" data-linked={String(!!departmentLinked)} data-pick={String(!!pickMode)}>{`TOGGLE-${id}`}</button>
   ),
   MembersOnlyBanner: ({ menuLevel }: { menuLevel: string }) =>
     menuLevel === "MEMBERS" ? <p>지금은 전체가 교인 전용입니다</p> : null,
@@ -44,6 +47,8 @@ const card = {
 beforeEach(() => {
   useAlbumsMock.mockReset();
   useGalleryTagsMock.mockReturnValue({ data: [], isPending: false, isError: false });
+  searchParamsRef.current = new URLSearchParams("");
+  perms.current = ["GALLERY_WRITE"];
 });
 
 describe("AlbumList", () => {
@@ -147,5 +152,55 @@ describe("AlbumList 교인만 표시", () => {
     render(<AlbumList menuLevel="PUBLIC" />);
     expect(screen.getByRole("button", { name: "TOGGLE-3" })).toBeDefined();
     expect(screen.queryByRole("button", { name: "TOGGLE-4" })).toBeNull();
+  });
+});
+
+// 교인만 메뉴(#201) — 기본은 글 단위 버튼·배지를 숨기고, 쓰기 권한자의 고르기 모드(?pick=1)에서만 버튼을 보인다.
+describe("AlbumList 교인만 메뉴의 고르기 모드", () => {
+  const pg = { size: 12, number: 0, totalElements: 3, totalPages: 1 };
+  const a1 = { ...card, id: 1, title: "A1", version: 1, membersOnly: false, departmentLinked: true };
+  const a2 = { ...card, id: 2, title: "A2", version: 1, membersOnly: true };
+  const toggles = () => screen.queryAllByRole("button").filter((el) => el.textContent?.startsWith("TOGGLE-"));
+
+  it("교인만 메뉴 기본: 쓰기 권한자에게도 버튼·배지가 없다", () => {
+    useAlbumsMock.mockReturnValue(albumsState({ data: { content: [a1, a2], page: pg } }));
+    const { container } = render(<AlbumList menuLevel="MEMBERS" />);
+    expect(toggles()).toHaveLength(0);
+    expect(container.textContent).not.toContain("교인만");
+  });
+
+  it("교인만 메뉴 + pick=1 + 쓰기 권한: 카드마다 고르기 버튼(카드 링크 밖, 부서 연결 전달), 배지 없음", () => {
+    searchParamsRef.current = new URLSearchParams("pick=1");
+    useAlbumsMock.mockReturnValue(albumsState({ data: { content: [a1, a2], page: pg } }));
+    const { container } = render(<AlbumList menuLevel="MEMBERS" />);
+    const btns = toggles();
+    expect(btns.map((el) => el.getAttribute("data-pick"))).toEqual(["true", "true"]);
+    expect(btns[0].getAttribute("data-linked")).toBe("true");
+    btns.forEach((el) => expect(el.closest("a")).toBeNull());
+    expect(container.textContent).not.toContain("교인만");
+  });
+
+  it("pick은 목록 조회 조건이 아니다", () => {
+    searchParamsRef.current = new URLSearchParams("pick=1&tagId=2");
+    useAlbumsMock.mockReturnValue(albumsState({ isPending: true }));
+    render(<AlbumList menuLevel="MEMBERS" />);
+    expect(useAlbumsMock).toHaveBeenCalledWith({ page: 0, tagId: 2 });
+  });
+
+  it("대조: pick=1이라도 쓰기 권한이 없으면 버튼이 없다", () => {
+    perms.current = [];
+    searchParamsRef.current = new URLSearchParams("pick=1");
+    useAlbumsMock.mockReturnValue(albumsState({ data: { content: [a1, a2], page: pg } }));
+    render(<AlbumList menuLevel="MEMBERS" />);
+    expect(toggles()).toHaveLength(0);
+  });
+
+  it("회귀: 누구나 메뉴는 지금 그대로 — 지금 상태 글자 버튼 + 교인만 배지, pick=1도 무시", () => {
+    searchParamsRef.current = new URLSearchParams("pick=1");
+    useAlbumsMock.mockReturnValue(albumsState({ data: { content: [a1, a2], page: pg } }));
+    render(<AlbumList menuLevel="PUBLIC" />);
+    expect(toggles().map((el) => el.getAttribute("data-pick"))).toEqual(["false", "false"]);
+    expect((screen.getByText("A2").closest("a") as HTMLElement).textContent).toContain("교인만");
+    expect((screen.getByText("A1").closest("a") as HTMLElement).textContent).not.toContain("교인만");
   });
 });

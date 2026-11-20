@@ -61,3 +61,14 @@ describe("SearchPillForm", () => {
     expect(push).toHaveBeenCalledWith("/notices?tagId=3");
   });
 });
+
+// #201 — 설교 고르기 모드(?pick=1)는 검색해도 유지돼야 한다(회귀 고정).
+describe("SearchPillForm 고르기 모드 유지", () => {
+  it("검색 제출이 pick=1을 넘긴다", () => {
+    spRef.current = new URLSearchParams("pick=1&page=2");
+    render(<SearchPillForm {...props} />);
+    fireEvent.change(screen.getByLabelText("공지 검색"), { target: { value: "praise" } });
+    fireEvent.submit(screen.getByRole("search"));
+    expect(push).toHaveBeenCalledWith("/notices?pick=1&q=praise");
+  });
+});

@@ -20,7 +20,9 @@ vi.mock("@/components/common/MemberGate", () => ({
   ),
 }));
 vi.mock("@/components/sermons/SermonDetail", () => ({
-  SermonDetail: ({ id }: { id: number }) => <div data-testid="detail" data-id={id} />,
+  SermonDetail: ({ id, menuLevel }: { id: number; menuLevel?: string }) => (
+    <div data-testid="detail" data-id={id} data-menu-level={menuLevel} />
+  ),
 }));
 
 const { getVisibilityMock, connectionMock } = vi.hoisted(() => ({
@@ -77,5 +79,18 @@ describe("SermonDetailPage (셸)", () => {
     await expect(
       SermonDetailPage({ params: Promise.resolve({ id: "-3" }) }),
     ).rejects.toThrow("NEXT_NOT_FOUND");
+  });
+});
+
+// #201 — 상세의 교인만 배지는 메뉴 수준을 보고 숨긴다. 못 읽으면 폴백(교인만)을 그대로 넘긴다(게이트와 같은 기준).
+describe("SermonDetailPage 메뉴 수준 전달", () => {
+  it.each([
+    ["MEMBERS", levels("MEMBERS", "PUBLIC")],
+    ["PUBLIC", levels("PUBLIC")],
+    ["MEMBERS", null],
+  ] as const)("상세에 menuLevel=%s를 넘긴다", async (expected, v) => {
+    getVisibilityMock.mockResolvedValue(v);
+    render(await SermonDetailPage({ params: Promise.resolve({ id: "7" }) }));
+    expect(screen.getByTestId("detail").getAttribute("data-menu-level")).toBe(expected);
   });
 });

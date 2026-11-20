@@ -175,3 +175,26 @@ describe("SermonForm 교인만 보기", () => {
     expect(container.querySelector("img")?.getAttribute("src")).toContain("sig=a");
   });
 });
+
+// #201 — 메뉴가 교인만이면 체크박스가 지금 당장은 아무것도 바꾸지 않는다는 것을 한 줄로 알린다.
+describe("SermonForm 교인만 메뉴 안내", () => {
+  const NOTE = "지금은 설교 전체가 교인 전용이라, 설교를 누구나로 열었을 때만 적용됩니다.";
+
+  it("메뉴가 교인만이면 체크박스 아래 안내 한 줄(체크박스 설명으로 연결)", () => {
+    renderForm(<SermonForm mode="create" menuLevel="MEMBERS" />);
+    const note = screen.getByText(NOTE);
+    const box = screen.getByLabelText("이 설교는 교인만 보기");
+    expect(box.getAttribute("aria-describedby")).toBe(note.id);
+  });
+
+  it("대조: 메뉴가 누구나면 안내 없음", () => {
+    renderForm(<SermonForm mode="create" menuLevel="PUBLIC" />);
+    expect(screen.queryByText(NOTE)).toBeNull();
+  });
+
+  it("대조: 설정을 못 읽으면(menuLevel 없음) 지금처럼 안내 없음", () => {
+    renderForm(<SermonForm mode="edit" initial={EDIT_INITIAL} />);
+    expect(screen.queryByText(NOTE)).toBeNull();
+    expect(screen.getByLabelText("이 설교는 교인만 보기").hasAttribute("aria-describedby")).toBe(false);
+  });
+});

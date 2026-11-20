@@ -112,6 +112,18 @@ describe("SermonDetail 교인만·서명 주소", () => {
     render(<SermonDetail id={7} />);
     expect(screen.queryByText("교인만")).toBeNull();
   });
+  // #201 — 메뉴 전체가 교인만이면 글 단위 표시는 의미가 없어 누구에게도 보이지 않는다.
+  it("메뉴가 교인만이면 표시한 설교에도 배지 없음", () => {
+    useSermonMock.mockReturnValue(state({ data: { ...sermon, membersOnly: true } }));
+    render(<SermonDetail id={7} menuLevel="MEMBERS" />);
+    expect(screen.getByRole("heading", { level: 1 })).toBeDefined();
+    expect(screen.queryByText("교인만")).toBeNull();
+  });
+  it("회귀: 메뉴가 누구나면 표시한 설교에 배지", () => {
+    useSermonMock.mockReturnValue(state({ data: { ...sermon, membersOnly: true } }));
+    render(<SermonDetail id={7} menuLevel="PUBLIC" />);
+    expect(screen.getByText("교인만")).toBeDefined();
+  });
   // 교인만 설교의 본문 이미지는 무서명 주소가 404 — 응답 mediaUrls의 서명 주소로 그린다(스펙 6.2).
   it("본문에 응답의 mediaUrls를 넘긴다", () => {
     const mediaUrls = { "42": "/api/media/42?exp=1&sig=s" };

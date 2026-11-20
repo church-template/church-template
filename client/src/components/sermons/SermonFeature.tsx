@@ -13,14 +13,17 @@ const focusRing =
 // 최신 말씀 띠(sermon-feature) — 교인이 목록에 오는 가장 흔한 이유(지난 주일 설교 다시 듣기)를 첫 화면에.
 // 띠 전체가 상세 링크이고, "말씀 보기"는 링크 안의 표시용 버튼 모양이다(중첩 인터랙티브 금지).
 // headingAs: 목록 페이지에선 페이지 h1 아래 h2, 홈에선 섹션 제목(h2) 아래라 h3.
+// showBadge: 메뉴 전체가 교인만이면 글 단위 교인만 배지를 그리지 않는다(#201).
 export function SermonFeature({
   sermon,
   now,
   headingAs: Heading = "h2",
+  showBadge = true,
 }: {
   sermon: SermonCardResponse;
   now: Date;
   headingAs?: "h2" | "h3";
+  showBadge?: boolean;
 }) {
   const label = isWithinWeek(sermon.preachedAt, now) ? SERMON_LIST.featuredRecent : SERMON_LIST.featuredLatest;
   const meta = [formatLongDate(sermon.preachedAt), sermon.preacher, sermon.series].filter(Boolean).join(" · ");
@@ -35,7 +38,7 @@ export function SermonFeature({
       <div>
         <div className="flex flex-wrap items-center gap-xs">
           <p className={cn(typo.captionStrong, "text-primary-on-dark")}>{label}</p>
-          {sermon.membersOnly ? <MembersOnlyBadge /> : null}
+          {showBadge && sermon.membersOnly ? <MembersOnlyBadge /> : null}
         </div>
         {sermon.scripture ? (
           <p className={cn(typo.titleMd, "mt-base text-on-dark-soft")}>{sermon.scripture}</p>

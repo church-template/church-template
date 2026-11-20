@@ -1,4 +1,6 @@
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
+import { getVisibility } from "@/lib/api/visibility";
 import { Container } from "@/components/shell/Container";
 import { MemberGate } from "@/components/common/MemberGate";
 import { RequirePermission } from "@/components/admin/RequirePermission";
@@ -10,13 +12,16 @@ export default async function SermonEditPage({ params }: { params: Promise<{ id:
   // 비숫자·0·음수 id는 렌더 전에 차단 — 상세 라우트와 동일 패턴
   const numId = Number(id);
   if (!Number.isInteger(numId) || numId <= 0) notFound();
+  // 체크박스 아래 교인만 메뉴 안내용(#201). 못 읽으면 안내 없이(지금 동작).
+  await connection();
+  const visibility = await getVisibility();
 
   return (
     <Container as="section" className="py-section">
       <h1 className="sr-only">설교 수정</h1>
       <MemberGate permission="SERMON_VIEW" domainLabel="설교">
         <RequirePermission permission="SERMON_WRITE" fallback={<EditAccessDenied />}>
-          <SermonEditLoader id={numId} />
+          <SermonEditLoader id={numId} menuLevel={visibility ? visibility.sermons : undefined} />
         </RequirePermission>
       </MemberGate>
     </Container>

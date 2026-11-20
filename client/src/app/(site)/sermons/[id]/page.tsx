@@ -30,7 +30,7 @@ export default async function SermonDetailPage({
   if (!Number.isInteger(numId) || numId <= 0) notFound();
   await connection();
   const levels = resolveVisibility(await getVisibility());
-  const detail = <SermonDetail id={numId} />;
+  const detail = <SermonDetail id={numId} menuLevel={levels.sermons} />;
 
   return (
     <Container as="section" className="py-section">

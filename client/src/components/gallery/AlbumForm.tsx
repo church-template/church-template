@@ -15,21 +15,25 @@ import { TagMultiSelect } from "@/components/admin/TagMultiSelect";
 import { adminOnError } from "@/lib/admin/mutationHandlers";
 import { notify } from "@/lib/notify";
 import { createAlbum, patchAlbum } from "@/lib/api/gallery.admin";
-import type { GalleryAlbumDetailResponse } from "@/lib/api/types";
+import type { GalleryAlbumDetailResponse, VisibilityLevel } from "@/lib/api/types";
 import { ACTION } from "@/constants/actionButton";
-import { VISIBILITY_COPY } from "@/constants/visibility";
+import { VISIBILITY_COPY, menuMembersFormNote } from "@/constants/visibility";
 import { albumSchema, type AlbumFormValues } from "./schemas";
 
 export interface AlbumFormProps {
   mode: "create" | "edit";
   initial?: GalleryAlbumDetailResponse;
+  // 메뉴 공개 범위 — 교인만이면 체크박스 아래 안내 한 줄(#201). 못 읽었으면 undefined(안내 없음).
+  menuLevel?: VisibilityLevel;
 }
 
 // 앨범 등록·수정 페이지 폼 — 공지(NoticeForm)와 동형. edit는 AlbumEditLoader가 keyed 마운트로 시드.
-export function AlbumForm({ mode, initial }: AlbumFormProps) {
+export function AlbumForm({ mode, initial, menuLevel }: AlbumFormProps) {
   const router = useRouter();
   const qc = useQueryClient();
   const lockHintId = useId();
+  const menuNoteId = useId();
+  const menuMembers = menuLevel === "MEMBERS";
   // 부서 소개는 연결된 앨범 사진을 누구에게나 보인다 — 그 앨범은 교인만으로 바꿀 수 없다(스펙 6.2).
   // 이미 교인만인 앨범(백엔드가 막기 전 데이터)은 풀 수 있게 둔다.
   const locked = !!initial?.departmentLinked && !initial.membersOnly;
@@ -86,12 +90,17 @@ export function AlbumForm({ mode, initial }: AlbumFormProps) {
         <Checkbox
           label={VISIBILITY_COPY.albumCheckbox}
           disabled={locked}
-          aria-describedby={locked ? lockHintId : undefined}
+          aria-describedby={[locked ? lockHintId : null, menuMembers ? menuNoteId : null].filter(Boolean).join(" ") || undefined}
           {...register("membersOnly")}
         />
         {locked ? (
           <p id={lockHintId} className={cn(typo.caption, "text-body")}>
             {VISIBILITY_COPY.deptLinked}
+          </p>
+        ) : null}
+        {menuMembers ? (
+          <p id={menuNoteId} className={cn(typo.caption, "text-body")}>
+            {menuMembersFormNote("gallery")}
           </p>
         ) : null}
       </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -14,7 +15,7 @@ import { MarkdownEditor } from "@/components/admin/MarkdownEditor";
 import { TagMultiSelect } from "@/components/admin/TagMultiSelect";
 import { adminOnError } from "@/lib/admin/mutationHandlers";
 import { revalidateMain } from "@/lib/admin/revalidate";
-import { VISIBILITY_COPY } from "@/constants/visibility";
+import { VISIBILITY_COPY, menuMembersFormNote } from "@/constants/visibility";
 import { notify } from "@/lib/notify";
 import { cn } from "@/lib/utils";
 import { typo } from "@/constants/typography";
@@ -24,12 +25,14 @@ import {
   type SermonCreateRequest,
   type SermonUpdateRequest,
 } from "@/lib/api/sermons.admin";
-import type { SermonDetailResponse } from "@/lib/api/types";
+import type { SermonDetailResponse, VisibilityLevel } from "@/lib/api/types";
 import { sermonSchema, type SermonFormValues } from "./schemas";
 
 export interface SermonFormProps {
   mode: "create" | "edit";
   initial?: SermonDetailResponse;
+  // 메뉴 공개 범위 — 교인만이면 체크박스 아래 안내 한 줄(#201). 못 읽었으면 undefined(안내 없음).
+  menuLevel?: VisibilityLevel;
 }
 
 // 쓰기 직후 쿼리 무효화로 목록·상세가 즉시 갱신되므로 지연 안내 불필요.
@@ -52,8 +55,10 @@ function toBody(v: SermonFormValues): SermonCreateRequest {
   };
 }
 
-export function SermonForm({ mode, initial }: SermonFormProps) {
+export function SermonForm({ mode, initial, menuLevel }: SermonFormProps) {
   const router = useRouter();
+  const menuNoteId = useId();
+  const menuMembers = menuLevel === "MEMBERS";
   const qc = useQueryClient();
   const {
     register,
@@ -160,7 +165,18 @@ export function SermonForm({ mode, initial }: SermonFormProps) {
           render={({ field }) => <TagMultiSelect value={field.value} onChange={field.onChange} />}
         />
       </div>
-      <Checkbox label={VISIBILITY_COPY.sermonCheckbox} {...register("membersOnly")} />
+      <div className="flex flex-col gap-xxs">
+        <Checkbox
+          label={VISIBILITY_COPY.sermonCheckbox}
+          aria-describedby={menuMembers ? menuNoteId : undefined}
+          {...register("membersOnly")}
+        />
+        {menuMembers ? (
+          <p id={menuNoteId} className={cn(typo.caption, "text-body")}>
+            {menuMembersFormNote("sermons")}
+          </p>
+        ) : null}
+      </div>
       <div className="flex gap-sm">
         <Button type="button" variant="tertiary" onClick={() => router.back()}>{ACTION.cancel.label}</Button>
         <Button type="submit" variant="primary" loading={mutation.isPending}>{ACTION.save.label}</Button>
