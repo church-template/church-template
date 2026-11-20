@@ -1,14 +1,35 @@
 {
   "metadata": {
-    "lastUpdated": "2026-11-19T17:07:37Z",
-    "currentVersion": "0.8.0",
+    "lastUpdated": "2026-11-20T01:36:41Z",
+    "currentVersion": "0.9.0",
     "projectType": "react",
     "projectTypes": [
       "react"
     ],
-    "totalReleases": 10
+    "totalReleases": 11
   },
   "releases": [
+    {
+      "version": "0.9.0",
+      "project_type": "react",
+      "project_types": [
+        "react"
+      ],
+      "date": "2026-11-20",
+      "pr_number": 43,
+      "raw_summary": "## Summary by CodeRabbit\n\n## 릴리스 노트\n\n* **개선**\n  * 메뉴 전체가 교인 전용일 때 글마다 보이던 공개 버튼과 교인만 표시를 숨김\n  * 메뉴를 열기 전에 교인 전용으로 둘 글을 고르는 화면 추가\n  * 설교·앨범 등록 화면에 교인만 보기 안내 추가",
+      "parsed_changes": {
+        "개선": {
+          "title": "개선",
+          "items": [
+            "메뉴 전체가 교인 전용일 때 글마다 보이던 공개 버튼과 교인만 표시를 숨김",
+            "메뉴를 열기 전에 교인 전용으로 둘 글을 고르는 화면 추가",
+            "설교·앨범 등록 화면에 교인만 보기 안내 추가"
+          ]
+        }
+      },
+      "parse_method": "markdown"
+    },
     {
       "version": "0.8.0",
       "project_type": "react",
